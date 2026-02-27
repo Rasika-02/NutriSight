@@ -1,20 +1,27 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const links = [
-  { to: "/", label: "Home" },
   { to: "/how-it-works", label: "How It Works" },
-  { to: "/meal-plans", label: "Meal Plans" },
-  { to: "/budget", label: "Budget" },
-  { to: "/health", label: "Health" },
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/about", label: "About" },
+  { to: "/meal-plans",   label: "Meal Plans"   },
+  { to: "/budget",       label: "Budget"       },
+  { to: "/health",       label: "Health"       },
+  { to: "/dashboard",   label: "Dashboard"    },
+  { to: "/about",        label: "About"        },
 ];
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate  = useNavigate();
   const [open, setOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -23,7 +30,7 @@ const Navbar = () => {
           NutriAI 🍛
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop links */}
         <div className="hidden md:flex items-center gap-6">
           {links.map((l) => (
             <Link
@@ -38,6 +45,38 @@ const Navbar = () => {
               {l.label}
             </Link>
           ))}
+        </div>
+
+        {/* Auth buttons — desktop */}
+        <div className="hidden md:flex items-center gap-3">
+          {isAuthenticated ? (
+            <>
+              <span className="text-sm font-medium text-muted-foreground">
+                👋 {user?.name?.split(" ")[0]}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="text-sm font-semibold px-4 py-2 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                className="text-sm font-semibold px-4 py-2 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -65,6 +104,21 @@ const Navbar = () => {
               {l.label}
             </Link>
           ))}
+          <div className="pt-2 border-t border-border flex flex-col gap-2">
+            {isAuthenticated ? (
+              <button
+                onClick={() => { handleLogout(); setOpen(false); }}
+                className="text-sm font-semibold text-muted-foreground py-2"
+              >
+                Logout ({user?.name?.split(" ")[0]})
+              </button>
+            ) : (
+              <>
+                <Link to="/login"  onClick={() => setOpen(false)} className="block py-2 text-sm font-medium text-muted-foreground">Login</Link>
+                <Link to="/signup" onClick={() => setOpen(false)} className="block py-2 text-sm font-semibold text-primary">Sign Up</Link>
+              </>
+            )}
+          </div>
         </div>
       )}
     </nav>
