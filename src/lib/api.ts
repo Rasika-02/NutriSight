@@ -1,4 +1,100 @@
 // API client for NutriSight Backend
+// ─── ML Backend (FastAPI, port 8000) ───────────────────────────────────────
+const ML_URL = "http://localhost:8000/api";
+
+export interface MealNutrition {
+  food_name: string;
+  matched_food: string;
+  weight_grams: number;
+  macronutrients: {
+    calories_kcal: number;
+    protein_g: number;
+    fat_g: number;
+    carbs_g: number;
+    fiber_g: number;
+    sugar_g: number;
+  };
+  minerals: {
+    calcium_mg: number;
+    iron_mg: number;
+    magnesium_mg: number;
+    potassium_mg: number;
+    sodium_mg: number;
+    zinc_mg: number;
+    phosphorus_mg: number;
+  };
+  vitamins: {
+    vitamin_a_mcg: number;
+    vitamin_c_mg: number;
+    vitamin_d_mcg: number;
+    vitamin_e_mg: number;
+    vitamin_k_mcg: number;
+    vitamin_b6_mg: number;
+    vitamin_b12_mcg: number;
+    folate_mcg: number;
+  };
+  other: { cholesterol_mg: number; water_g: number };
+  error?: string;
+}
+
+export interface BodyAnalysis {
+  bmi: number;
+  category: "under_weight" | "normal" | "overweight" | "obese" | "extremely_obese";
+  confidence: number;
+  nutrition_plan: {
+    body_metrics: { weight_kg: number; height_cm: number; bmi: number; category: string; age: number; gender: string };
+    energy_expenditure: { bmr: number; tdee: number; activity_level: string };
+    daily_targets: { calories: number; protein_g: number; carbs_g: number; fats_g: number; fiber_g: number; water_ml: number };
+    macronutrient_distribution: { protein_pct: number; carbs_pct: number; fats_pct: number };
+    recommendations: string[];
+  };
+  error?: string;
+}
+
+export interface ScanRecord {
+  scan_id: string;
+  scanned_at: string;          // ISO 8601 UTC
+  bmi: number;
+  category: string;
+  confidence: number;
+  pose_quality?: number;
+  inputs: { height_cm: number; weight_kg: number; age: number; gender: string; activity_level: string };
+  nutrition_plan?: { daily_targets: { calories: number; protein_g: number; carbs_g: number; fats_g: number; fiber_g: number; water_ml: number } };
+}
+
+export const mlApi = {
+  analyze: (meal_name: string, weight_grams: number) =>
+    fetch(`${ML_URL}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meal_name, weight_grams }),
+    }).then(r => r.json() as Promise<MealNutrition>),
+
+  bodyAnalyze: (height_cm: number, weight_kg: number, age: number, gender: string, activity_level: string) =>
+    fetch(`${ML_URL}/body-analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ height_cm, weight_kg, age, gender, activity_level }),
+    }).then(r => r.json() as Promise<BodyAnalysis>),
+
+  cameraAnalyze: (payload: {
+    user_id: string;
+    height_cm: number; weight_kg: number; age: number; gender: string; activity_level: string;
+    waist_hip_ratio: number; shoulder_waist_ratio: number; torso_leg_ratio: number; body_aspect_ratio: number;
+    pose_quality?: number;
+  }) =>
+    fetch(`${ML_URL}/camera-analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then(r => r.json() as Promise<BodyAnalysis & { scan_id: string; scanned_at: string }>),
+
+  getScanHistory: (user_id: string, limit = 10) =>
+    fetch(`${ML_URL}/scan-history/${user_id}?limit=${limit}`)
+      .then(r => r.json() as Promise<{ scans: ScanRecord[]; count: number }>),
+};
+
+// ─── Main Backend (Express, port 5000) ────────────────────────────────────
 const BASE_URL = "http://localhost:5000/api";
 
 interface AuthResponse {
@@ -6,6 +102,19 @@ interface AuthResponse {
   name: string;
   email: string;
   token: string;
+}
+
+export interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  age: number | null;
+  gender: "male" | "female" | "other" | null;
+  height: number | null;
+  weight: number | null;
+  activityLevel: "sedentary" | "light" | "moderate" | "active" | "very_active" | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface ApiError {
@@ -48,4 +157,17 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
+};
+
+export const userApi = {
+  getProfile: () => request<UserProfile>("/users/me"),
+
+  updateProfile: (data: Partial<Omit<UserProfile, "_id" | "email" | "createdAt" | "updatedAt">>) =>
+    request<UserProfile>("/users/me", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  getUserById: (userId: string) =>
+    request<UserProfile>(`/users/${userId}`),
 };

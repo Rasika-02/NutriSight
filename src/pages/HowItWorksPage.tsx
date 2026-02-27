@@ -1,313 +1,397 @@
-import { useSectionAnimation } from "@/hooks/useSectionAnimation";
-import { Upload, Brain, Search, CalendarCheck, ShoppingCart } from "lucide-react";
+import React, { useState, useRef } from "react";
 
-const steps = [
-  {
-    icon: Upload,
-    title: "Upload Body Photo",
-    desc: "Share meal or body images for instant AI analysis.",
-    emoji: "📸",
-  },
-  {
-    icon: Brain,
-    title: "AI Body Analysis",
-    desc: "Our model identifies body composition, BMI & visual cues.",
-    emoji: "🧠",
-  },
-  {
-    icon: Search,
-    title: "Detect Nutrient Deficiencies",
-    desc: "Spot gaps in vitamins, iron, and protein with precision.",
-    emoji: "🔍",
-  },
-  {
-    icon: CalendarCheck,
-    title: "Budget-Friendly Diet Plan",
-    desc: "Weekly Indian diet plan under ₹100/day, tailored to you.",
-    emoji: "📋",
-  },
-  {
-    icon: ShoppingCart,
-    title: "Weekly Grocery List",
-    desc: "Auto-generated list sourced from your local market.",
-    emoji: "🛒",
-  },
-];
+export default function NutriAnalysisPage() {
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [bodyFile, setBodyFile] = useState<File | null>(null);
+  const [reportFile, setReportFile] = useState<File | null>(null);
 
-const HowItWorksPage = () => {
-  const ref = useSectionAnimation(true);
+  const bodyRef = useRef<HTMLInputElement>(null);
+  const reportRef = useRef<HTMLInputElement>(null);
 
   return (
-    <section
-      ref={ref}
-      className="section-fade min-h-screen flex flex-col justify-center px-6 py-24"
-      style={{
-        background: "linear-gradient(145deg, #FFF0E8 0%, #FFE0CC 35%, #FFF5EE 65%, #FFEADB 100%)",
-      }}
-    >
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
-        .hiw-card {
-          position: relative;
-          background: rgba(255, 255, 255, 0.72);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 140, 80, 0.18);
-          border-radius: 28px;
-          padding: 32px 22px 28px;
-          text-align: center;
-          transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease, background 0.3s ease;
-          overflow: hidden;
-          cursor: default;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; }
+
+        /* ─── FLOATING BUBBLES ─── */
+        @keyframes floatUp {
+          0%   { transform: translateY(0px) translateX(0px); opacity: 0; }
+          10%  { opacity: 1; }
+          50%  { transform: translateY(-45vh) translateX(18px); }
+          90%  { opacity: 0.8; }
+          100% { transform: translateY(-105vh) translateX(-10px); opacity: 0; }
         }
-        .hiw-card::before {
-          content: '';
+
+        .bubbles {
           position: absolute;
           inset: 0;
-          background: linear-gradient(160deg, rgba(255,140,80,0.07) 0%, transparent 60%);
-          border-radius: inherit;
-          opacity: 0;
-          transition: opacity 0.3s ease;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: 1;
         }
-        .hiw-card:hover {
-          transform: translateY(-10px) scale(1.02);
-          box-shadow: 0 28px 60px rgba(220, 90, 40, 0.16), 0 4px 12px rgba(220,90,40,0.08);
-          background: rgba(255, 255, 255, 0.92);
-        }
-        .hiw-card:hover::before { opacity: 1; }
 
-        .hiw-icon-wrap {
-          width: 68px;
-          height: 68px;
+        .bubble {
+          position: absolute;
+          bottom: -80px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #FFF0E5, #FFD9C0);
-          border: 2px solid rgba(255, 120, 60, 0.22);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 16px;
-          transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-          box-shadow: 0 6px 18px rgba(255,100,50,0.12);
-        }
-        .hiw-card:hover .hiw-icon-wrap {
-          transform: scale(1.18) rotate(-6deg);
-          background: linear-gradient(135deg, #FF8C5A, #FF5C1A);
-          border-color: transparent;
-          box-shadow: 0 12px 32px rgba(255,92,26,0.38);
-        }
-        .hiw-card:hover .hiw-icon {
-          color: white !important;
+          animation: floatUp ease-in-out infinite;
+          background: radial-gradient(circle at 30% 28%,
+            rgba(255,255,255,0.92) 0%,
+            rgba(255,210,185,0.55) 45%,
+            rgba(230,130,80,0.18) 100%
+          );
+          border: 2px solid rgba(255,255,255,0.75);
+          box-shadow:
+            inset -3px -3px 8px rgba(200,100,60,0.15),
+            inset 3px 3px 8px rgba(255,255,255,0.6),
+            0 4px 16px rgba(200,100,60,0.12);
         }
 
-        .step-badge {
+        .bubble::after {
+          content: '';
+          position: absolute;
+          top: 18%; left: 22%;
+          width: 22%; height: 18%;
+          background: rgba(255,255,255,0.7);
+          border-radius: 50%;
+          transform: rotate(-30deg);
+          filter: blur(1px);
+        }
+
+        .bubble:nth-child(1)  { width: 58px;  height: 58px;  left: 4%;   animation-duration: 13s; animation-delay: 0s;    }
+        .bubble:nth-child(2)  { width: 38px;  height: 38px;  left: 11%;  animation-duration: 10s; animation-delay: 1.8s;  }
+        .bubble:nth-child(3)  { width: 75px;  height: 75px;  left: 20%;  animation-duration: 15s; animation-delay: 3.2s;  }
+        .bubble:nth-child(4)  { width: 30px;  height: 30px;  left: 33%;  animation-duration: 11s; animation-delay: 0.5s;  }
+        .bubble:nth-child(5)  { width: 95px;  height: 95px;  left: 46%;  animation-duration: 18s; animation-delay: 2.4s;  }
+        .bubble:nth-child(6)  { width: 45px;  height: 45px;  left: 57%;  animation-duration: 12s; animation-delay: 5s;    }
+        .bubble:nth-child(7)  { width: 62px;  height: 62px;  left: 67%;  animation-duration: 14s; animation-delay: 1.2s;  }
+        .bubble:nth-child(8)  { width: 24px;  height: 24px;  left: 76%;  animation-duration: 9s;  animation-delay: 4s;    }
+        .bubble:nth-child(9)  { width: 85px;  height: 85px;  left: 84%;  animation-duration: 17s; animation-delay: 0.8s;  }
+        .bubble:nth-child(10) { width: 40px;  height: 40px;  left: 91%;  animation-duration: 11s; animation-delay: 3s;    }
+        .bubble:nth-child(11) { width: 52px;  height: 52px;  left: 28%;  animation-duration: 16s; animation-delay: 6.5s;  }
+        .bubble:nth-child(12) { width: 32px;  height: 32px;  left: 53%;  animation-duration: 10s; animation-delay: 7.5s;  }
+        .bubble:nth-child(13) { width: 68px;  height: 68px;  left: 40%;  animation-duration: 13s; animation-delay: 9s;    }
+        .bubble:nth-child(14) { width: 26px;  height: 26px;  left: 16%;  animation-duration: 8s;  animation-delay: 4.5s;  }
+        .bubble:nth-child(15) { width: 48px;  height: 48px;  left: 72%;  animation-duration: 12s; animation-delay: 8s;    }
+
+        /* ─── PAGE ─── */
+        .page {
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          padding: 80px 60px;
+          background:
+            radial-gradient(ellipse at 0% 0%,   #ffd4b8 0%,  transparent 55%),
+            radial-gradient(ellipse at 100% 0%,  #ffbfa0 0%,  transparent 50%),
+            radial-gradient(ellipse at 50% 50%,  #ffe8d5 0%,  transparent 60%),
+            radial-gradient(ellipse at 0% 100%,  #ffc9a8 0%,  transparent 55%),
+            radial-gradient(ellipse at 100% 100%,#ffaa80 0%,  transparent 50%),
+            #fde0c8;
+        }
+
+        .wrap {
+          max-width: 1100px;
+          margin: auto;
+          position: relative;
+          z-index: 2;
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 70px;
+        }
+
+        .hero-eyebrow {
+          font-size: 12px;
+          letter-spacing: 3.5px;
+          text-transform: uppercase;
+          color: #b05c30;
+          font-weight: 600;
+          opacity: 0.9;
+        }
+
+        .hero-title {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(3.5rem, 6vw, 6rem);
+          line-height: 0.95;
+        }
+
+        .dark  { color: #3a1a08; }
+        .light { color: #c4622c; font-style: italic; }
+
+        .hero-sub {
+          max-width: 560px;
+          font-size: 1.05rem;
+          line-height: 1.8;
+          color: #7a3c1e;
+          font-weight: 400;
+        }
+
+        .guideline-tag {
           display: inline-flex;
           align-items: center;
-          background: linear-gradient(135deg, #FF8C5A, #FF5C1A);
-          color: white;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 1.8px;
-          padding: 4px 13px;
-          border-radius: 20px;
-          margin-bottom: 14px;
-          text-transform: uppercase;
-          box-shadow: 0 4px 14px rgba(255,92,26,0.3);
-        }
-
-        .connector-dot {
-          width: 9px;
-          height: 9px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #FF8C5A, #FF5C1A);
-          flex-shrink: 0;
-          box-shadow: 0 0 0 4px rgba(255,92,26,0.12);
-        }
-        .connector-line {
-          flex: 1;
-          height: 1.5px;
-          background: linear-gradient(90deg, rgba(255,92,26,0.45), rgba(255,92,26,0.08));
-        }
-
-        .tag-float {
-          position: absolute;
-          top: 14px;
-          right: 16px;
-          font-size: 1.25rem;
-          opacity: 0.15;
-          transition: opacity 0.3s ease, transform 0.35s ease;
-        }
-        .hiw-card:hover .tag-float {
-          opacity: 0.5;
-          transform: scale(1.25) rotate(10deg);
-        }
-
-        .section-label {
-          display: inline-block;
-          background: rgba(255, 92, 26, 0.1);
-          border: 1.5px solid rgba(255,92,26,0.25);
-          color: #CC4A10;
-          font-size: 10.5px;
-          font-weight: 800;
-          letter-spacing: 2.5px;
-          text-transform: uppercase;
-          padding: 6px 20px;
-          border-radius: 30px;
-          margin-bottom: 20px;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 100px;
+          background: rgba(255,255,255,0.55);
+          border: 1.5px solid rgba(190,100,55,0.25);
           font-family: 'DM Sans', sans-serif;
-        }
-
-        .bottom-tag {
-          background: rgba(255,255,255,0.65);
-          border: 1px solid rgba(255,120,60,0.2);
-          color: #8A4828;
-          font-size: 0.75rem;
+          font-size: 0.82rem;
           font-weight: 600;
-          padding: 5px 14px;
-          border-radius: 20px;
-          backdrop-filter: blur(8px);
-          font-family: 'DM Sans', sans-serif;
-          transition: all 0.25s ease;
-        }
-        .bottom-tag:hover {
-          background: rgba(255,255,255,0.9);
-          border-color: rgba(255,92,26,0.35);
-          transform: translateY(-2px);
+          color: #a04820;
+          letter-spacing: 0.3px;
         }
 
-        .glow-orb {
-          position: absolute;
+        .guideline-tag .check {
+          width: 18px; height: 18px;
           border-radius: 50%;
-          filter: blur(75px);
-          pointer-events: none;
+          background: #c4622c;
+          color: white;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.65rem;
+          flex-shrink: 0;
         }
 
-        .accent-bar {
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0%;
-          height: 3px;
-          background: linear-gradient(90deg, transparent, #FF8C5A, transparent);
-          border-radius: 0 0 28px 28px;
-          transition: width 0.4s ease;
+        /* ─── UPLOAD CARDS ─── */
+        .upload-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          margin-bottom: 50px;
         }
-        .hiw-card:hover .accent-bar {
-          width: 50%;
+
+        .upload-card {
+          background: rgba(255,255,255,0.55);
+          border: 2px dashed rgba(190,100,55,0.35);
+          border-radius: 20px;
+          padding: 40px;
+          text-align: center;
+          cursor: pointer;
+          transition: 0.3s ease;
+          color: #7a3c1e;
+          font-weight: 600;
+          font-size: 1rem;
+          backdrop-filter: blur(6px);
+          box-shadow: 0 4px 20px rgba(180,90,40,0.08);
+        }
+
+        .upload-card:hover {
+          background: rgba(255,255,255,0.75);
+          border-color: #c4622c;
+          transform: translateY(-4px);
+          box-shadow: 0 12px 32px rgba(180,90,40,0.16);
+          color: #3a1a08;
+        }
+
+        .upload-card .icon {
+          font-size: 2rem;
+          margin-bottom: 10px;
+          display: block;
+        }
+
+        .upload-card.uploaded {
+          background: rgba(196,98,44,0.12);
+          border: 2px solid #c4622c;
+        }
+
+        .upload-card .file-name {
+          display: block;
+          margin-top: 8px;
+          font-size: 0.78rem;
+          color: #c4622c;
+          font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 200px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .upload-card .check-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px; height: 22px;
+          border-radius: 50%;
+          background: #c4622c;
+          color: white;
+          font-size: 0.7rem;
+          margin-bottom: 8px;
+        }
+
+        /* ─── INPUTS ─── */
+        .meta-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          margin-bottom: 40px;
+        }
+
+        .field { display: flex; flex-direction: column; }
+
+        .field label {
+          margin-bottom: 8px;
+          color: #7a3c1e;
+          font-size: 0.82rem;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+
+        .field input,
+        .field select {
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 1.5px solid rgba(190,100,55,0.25);
+          background: rgba(255,255,255,0.65);
+          font-size: 1rem;
+          color: #3a1a08;
+          font-family: 'DM Sans', sans-serif;
+          transition: 0.2s;
+          backdrop-filter: blur(4px);
+          outline: none;
+        }
+
+        .field input::placeholder { color: #c4946e; }
+
+        .field input:focus,
+        .field select:focus {
+          border-color: #c4622c;
+          background: rgba(255,255,255,0.85);
+          box-shadow: 0 0 0 3px rgba(196,98,44,0.12);
+        }
+
+        .field select option { color: #3a1a08; background: #fff; }
+
+        /* ─── CTA BUTTON ─── */
+        .cta-btn {
+          width: 100%;
+          padding: 22px;
+          border-radius: 20px;
+          border: none;
+          font-size: 1.15rem;
+          font-weight: 700;
+          font-family: 'DM Sans', sans-serif;
+          background: linear-gradient(135deg, #c4622c 0%, #a04820 100%);
+          color: #fff;
+          cursor: pointer;
+          transition: 0.3s ease;
+          letter-spacing: 0.5px;
+          box-shadow: 0 8px 28px rgba(160,72,32,0.32);
+        }
+
+        .cta-btn:hover {
+          background: linear-gradient(135deg, #d47038 0%, #b85528 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 14px 36px rgba(160,72,32,0.4);
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media(max-width: 1000px){
+          .page { padding: 60px 30px; }
+          .upload-grid { grid-template-columns: 1fr; }
+          .meta-row { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media(max-width: 540px){
+          .meta-row { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      {/* Ambient background orbs */}
-      <div className="glow-orb" style={{ width: 500, height: 500, background: "rgba(255,110,50,0.08)", top: "-10%", left: "45%", transform: "translateX(-50%)", zIndex: 0, position: "absolute" }} />
-      <div className="glow-orb" style={{ width: 350, height: 350, background: "rgba(255,180,90,0.1)", bottom: "5%", left: "5%", zIndex: 0, position: "absolute" }} />
-      <div className="glow-orb" style={{ width: 250, height: 250, background: "rgba(255,150,80,0.09)", bottom: "15%", right: "5%", zIndex: 0, position: "absolute" }} />
+      <div className="page">
 
-      <div className="container mx-auto max-w-6xl" style={{ position: "relative", zIndex: 1 }}>
 
-        {/* ── HEADER ── */}
-        <div className="text-center mb-16">
-          <div className="section-label">AI-Powered Nutrition Intelligence</div>
 
-          <h1 style={{
-            fontFamily: "'Fraunces', serif",
-            fontSize: "clamp(2.8rem, 5.5vw, 4.6rem)",
-            fontWeight: 900,
-            lineHeight: 1.05,
-            letterSpacing: "-1.5px",
-            color: "#2D1206",
-            marginBottom: 18,
-          }}>
-            How It{" "}
-            <span style={{
-              fontStyle: "italic",
-              background: "linear-gradient(135deg, #FF8C5A, #FF3D00)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
-              Works
-            </span>
-          </h1>
-
-          <p style={{
-            fontFamily: "'DM Sans', sans-serif",
-            color: "#8A4828",
-            fontSize: "1.08rem",
-            maxWidth: 460,
-            margin: "0 auto",
-            lineHeight: 1.7,
-            fontWeight: 400,
-          }}>
-            Five simple steps to smarter, personalized nutrition — built for India.
-          </p>
-        </div>
-
-        {/* ── CONNECTOR DOTS (desktop only) ── */}
-        <div className="hidden lg:flex items-center justify-center mb-[-30px] px-20 relative" style={{ zIndex: 2 }}>
-          {steps.map((_, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
-              <div className="connector-dot" />
-              {i < steps.length - 1 && <div className="connector-line" />}
-            </div>
+        {/* FLOATING BUBBLES */}
+        <div className="bubbles">
+          {Array.from({ length: 15 }).map((_, i) => (
+            <div key={i} className="bubble" />
           ))}
         </div>
 
-        {/* ── STEP CARDS ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-          {steps.map((step, i) => (
-            <div
-              key={step.title}
-              className="hiw-card"
-              style={{ transitionDelay: `${i * 0.06}s` }}
-            >
-              <span className="tag-float">{step.emoji}</span>
+        <div className="wrap">
 
-              {/* Icon circle */}
-              <div className="hiw-icon-wrap">
-                <step.icon
-                  size={26}
-                  className="hiw-icon"
-                  style={{ color: "#FF5C1A", transition: "color 0.3s ease" }}
-                />
-              </div>
+          {/* HERO */}
+          <div className="hero">
+            <div className="hero-eyebrow">AI Nutrition Intelligence</div>
 
-              {/* Step pill */}
-              <div className="step-badge">Step {i + 1}</div>
+            <h1 className="hero-title">
+              <span className="dark">Eat Smart.</span><br />
+              <span className="light">Live Better.</span>
+            </h1>
 
-              {/* Title */}
-              <h3 style={{
-                fontFamily: "'Fraunces', serif",
-                fontSize: "1.02rem",
-                fontWeight: 700,
-                color: "#2D1206",
-                marginBottom: 9,
-                lineHeight: 1.3,
-              }}>
-                {step.title}
-              </h3>
+            <p className="hero-sub">
+              Upload your photo and medical reports. Get a personalised nutrition analysis and Indian diet plan built just for you.
+            </p>
 
-              {/* Description */}
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "0.81rem",
-                color: "#8A4828",
-                lineHeight: 1.65,
-                fontWeight: 400,
-              }}>
-                {step.desc}
-              </p>
-
-              {/* Hover accent bar */}
-              <div className="accent-bar" />
+            <div className="guideline-tag">
+              <span className="check">✓</span>
+              Aligned with WHO &amp; ICMR Nutritional Guidelines
             </div>
-          ))}
+          </div>
+
+          {/* UPLOAD */}
+          <div className="upload-grid">
+            <div className="upload-card" onClick={() => bodyRef.current?.click()}>
+              <input ref={bodyRef} type="file" style={{ display: "none" }} />
+              <span className="icon">📷</span>
+              Upload Body Photo
+            </div>
+
+            <div className="upload-card" onClick={() => reportRef.current?.click()}>
+              <input ref={reportRef} type="file" style={{ display: "none" }} />
+              <span className="icon">📋</span>
+              Upload Medical Report
+            </div>
+          </div>
+
+          {/* INPUTS */}
+          <div className="meta-row">
+            <div className="field">
+              <label>Height (cm)</label>
+              <input placeholder="e.g. 170" value={height} onChange={(e) => setHeight(e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label>Weight (kg)</label>
+              <input placeholder="e.g. 65" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label>Age</label>
+              <input placeholder="e.g. 28" value={age} onChange={(e) => setAge(e.target.value)} />
+            </div>
+
+            <div className="field">
+              <label>Gender</label>
+              <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                <option value="">Select</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <button className="cta-btn">
+            🔬 Run Full Nutrition Analysis
+          </button>
+
         </div>
-
-
-
       </div>
-    </section>
+    </>
   );
-};
-
-export default HowItWorksPage;
+}

@@ -7,6 +7,7 @@
  * ✅ Lined notecard body style
  * ✅ Plate shows SPLIT VIEW: Junk food LEFT | Healthy alternative RIGHT
  * ✅ Smooth auto-gliding carousel — no arrows
+ * ✅ Ticker/marquee bar REMOVED
  */
 
 import { Link, useNavigate } from "react-router-dom";
@@ -15,9 +16,9 @@ import rajma            from "@/assets/rajma.jpg";
 import paneer           from "@/assets/paneer.jpg";
 import egg              from "@/assets/egg.jpg";
 import dal              from "@/assets/dal.jpg";
-import illNutrition     from "@/assets/ill-nutrition.jpeg";
-import illBudget        from "@/assets/ill-budget.jpeg";
-import illSmartPlanning from "@/assets/ill-smart-planning.jpeg";
+import illNutrition     from "@/assets/ill-nutrition.png";
+import illBudget        from "@/assets/ill-budget.png";
+import illSmartPlanning from "@/assets/ill-smart-planning.png";
 
 /* ─── Junk ↔ Healthy pairs ─── */
 const pairs = [
@@ -53,8 +54,8 @@ const NAV_LINKS = [
 /* ─── Feature cards — straight sticky note style ─── */
 const featCards = [
   {
-    cardBg:       "#FFCBA4",
-    imgBg:        "#C4522E",
+    cardBg:       "linear-gradient(135deg, #FFB088 0%, #FFCBA4 50%, #FFD4B8 100%)",
+    imgBg:        "linear-gradient(135deg, #FFA070 0%, #FFBB90 50%, #FFCFAD 100%)",
     accent:       "#7A2D10",
     dotColor:     "#C4522E",
     illustration: illNutrition,
@@ -66,8 +67,8 @@ const featCards = [
     href:         "/health",
   },
   {
-    cardBg:       "#FFF0E0",
-    imgBg:        "#FFF0E0",
+    cardBg:       "linear-gradient(135deg, #FFCBA4 0%, #FFD8B8 50%, #FFE8D5 100%)",
+    imgBg:        "linear-gradient(135deg, #FFBF95 0%, #FFD0AE 50%, #FFE2CC 100%)",
     accent:       "#6B2A0E",
     dotColor:     "#E8734A",
     illustration: illBudget,
@@ -79,8 +80,8 @@ const featCards = [
     href:         "/budget",
   },
   {
-    cardBg:       "#FFBA8A",
-    imgBg:        "#FFDDC8",
+    cardBg:       "linear-gradient(135deg, #FFD4B0 0%, #FFBF95 50%, #FFAD80 100%)",
+    imgBg:        "linear-gradient(135deg, #FFE2CC 0%, #FFD0B5 50%, #FFBC98 100%)",
     accent:       "#3D1F0A",
     dotColor:     "#8B2E0F",
     illustration: illSmartPlanning,
@@ -191,7 +192,6 @@ export default function Index() {
         @keyframes float3   {0%,100%{transform:translateY(0)}50%{transform:translateY(-10px) rotate(-5deg)}}
         @keyframes blob     {0%,100%{border-radius:60% 40% 55% 45%/50% 60% 40% 50%}33%{border-radius:45% 55% 40% 60%/60% 40% 55% 45%}66%{border-radius:55% 45% 60% 40%/45% 55% 50% 50%}}
         @keyframes spinRing {from{transform:rotate(0)}to{transform:rotate(360deg)}}
-        @keyframes marquee  {0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
         @keyframes pulsering{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.06);opacity:1}}
         @keyframes heroIn   {from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
 
@@ -221,10 +221,6 @@ export default function Index() {
         .mealCard:hover .mealImg{transform:scale(1.07)}
         .mealImg{transition:transform .4s ease}
 
-        .ticker{overflow:hidden;background:#E8734A;padding:13px 0}
-        .tickerInner{display:flex;white-space:nowrap;animation:marquee 22s linear infinite}
-        .tickerItem{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:1.5px;text-transform:uppercase;padding:0 38px}
-
         .statPill{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:15px 22px;min-width:86px}
         .addBtn{background:#E8734A;color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;box-shadow:0 4px 14px rgba(232,115,74,.4);flex-shrink:0}
         .addBtn:hover{transform:scale(1.15) rotate(90deg)}
@@ -250,19 +246,17 @@ export default function Index() {
           transform: translateY(-8px);
         }
 
-        /* The actual card body (notecard) */
         .stickyCard {
           border-radius: 16px;
           overflow: visible;
           box-shadow:
-            0 10px 40px rgba(139,58,31,.18),
-            0 2px 8px rgba(139,58,31,.10),
-            inset 0 1px 0 rgba(255,255,255,.5);
+            0 10px 40px rgba(139,58,31,.14),
+            0 2px 8px rgba(139,58,31,.08),
+            inset 0 1px 0 rgba(255,255,255,.6);
           position: relative;
           background: var(--card-bg);
         }
 
-        /* Lined note paper background */
         .noteLines {
           position: absolute;
           inset: 0;
@@ -273,12 +267,11 @@ export default function Index() {
             to bottom,
             transparent,
             transparent 27px,
-            rgba(139,58,31,.07) 28px
+            rgba(139,58,31,.06) 28px
           );
           background-position: 0 56px;
         }
 
-        /* Image wrapper — positioned to pop ABOVE the card */
         .stickyImgWrap {
           position: absolute;
           top: 0;
@@ -288,10 +281,10 @@ export default function Index() {
           height: 220px;
           border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 14px 36px rgba(0,0,0,.22), 0 4px 10px rgba(0,0,0,.15);
+          box-shadow: 0 14px 36px rgba(0,0,0,.15), 0 4px 10px rgba(0,0,0,.10);
           z-index: 10;
           margin-top: -4px;
-          background: var(--img-bg, #f5ede4);
+          background: var(--img-bg, linear-gradient(145deg,#FFD4B0,#FFB085));
           display: flex;
           align-items: center;
           justify-content: center;
@@ -309,14 +302,12 @@ export default function Index() {
           transform: scale(1.04);
         }
 
-        /* Card body inner padding */
         .stickyBody {
           padding: 130px 24px 28px;
           position: relative;
           z-index: 1;
         }
 
-        /* Three dots */
         .threeDots {
           display: flex;
           gap: 5px;
@@ -473,20 +464,8 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ═══════ TICKER ═══════ */}
-      <div className="ticker">
-        <div className="tickerInner">
-          {Array(4).fill(null).flatMap((_,bi)=>
-            ["🍔 Burger → Rajma Chawal","🥟 Samosa → Paneer Bhurji","🫓 Vada Pav → Egg Curry","🍕 Pizza → Dal Rice","💪 Same Craving, More Protein","⚡ Under ₹60 Daily","🌿 AI Nutrition Magic"]
-              .map((item,i)=>(
-                <span key={`${bi}-${i}`} className="tickerItem">{item} <span style={{ color:"rgba(255,255,255,.45)",marginLeft:14 }}>✦</span></span>
-              ))
-          )}
-        </div>
-      </div>
-
       {/* ═══════ FEATURES — STICKY NOTE STYLE ═══════ */}
-      <section style={{ padding:"110px 48px 160px",background:"#FFF5EE",position:"relative" }}>
+      <section style={{ padding:"110px 48px 160px",background:"linear-gradient(160deg,#FFF4EE 0%,#FFE8D5 40%,#FFD8C0 100%)",position:"relative" }}>
         <div style={{ maxWidth:1200,margin:"0 auto",position:"relative" }}>
 
           <div style={{ position:"absolute",width:260,height:260,background:"linear-gradient(135deg,#FFD4B8,#FFBA94)",borderRadius:"60% 40% 55% 45%/50% 60% 40% 50%",top:0,right:-30,opacity:.18,animation:"blob 10s ease-in-out infinite",pointerEvents:"none" }}/>
@@ -498,46 +477,24 @@ export default function Index() {
             </h2>
           </div>
 
-          {/* Cards row — extra top padding to accommodate pop-out images */}
           <div className="featGrid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:40, alignItems:"end", paddingTop:60 }}>
             {featCards.map((f, i) => (
-              <Link
-                key={f.title}
-                to={f.href}
-                className="stickyOuter"
-              >
-                {/* ── POP-OUT IMAGE (absolutely positioned above the card) ── */}
-                <div
-                  className="stickyImgWrap"
-                  style={{ ["--img-bg" as string]: f.imgBg } as React.CSSProperties}
-                >
-                  <img
-                    src={f.illustration}
-                    alt={f.illAlt}
-                    className="stickyImg"
-                  />
+              <Link key={f.title} to={f.href} className="stickyOuter">
+                <div className="stickyImgWrap" style={{ background: f.imgBg }}>
+                  <img src={f.illustration} alt={f.illAlt} className="stickyImg"/>
                 </div>
-
-                {/* ── CARD BODY ── */}
-                <div
-                  className="stickyCard"
-                  style={{ ["--card-bg" as string]: f.cardBg } as React.CSSProperties}
-                >
+                <div className="stickyCard" style={{ background: f.cardBg }}>
                   <div className="noteLines"/>
                   <div className="stickyBody">
-                    {/* Three dots */}
                     <div className="threeDots">
                       {[1, 0.5, 0.22].map((op, j) => (
                         <div key={j} style={{ width:7, height:7, borderRadius:"50%", background:f.dotColor, opacity:op }}/>
                       ))}
                     </div>
-
                     <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:f.accent, marginBottom:14, letterSpacing:"-0.3px" }}>
                       {f.title}
                     </h3>
-
                     <div style={{ width:"100%", height:1, background:`linear-gradient(to right,${f.dotColor}66,transparent)`, marginBottom:16 }}/>
-
                     <div style={{ marginBottom:22 }}>
                       {f.items.map((item, idx) => (
                         <div key={idx} className="dm" style={{ fontSize:13, color:f.accent, marginBottom:9, display:"flex", alignItems:"flex-start", gap:9, opacity:.84 }}>
@@ -546,7 +503,6 @@ export default function Index() {
                         </div>
                       ))}
                     </div>
-
                     <div style={{ borderTop:`2px dashed ${f.dotColor}44`, paddingTop:18, display:"flex", alignItems:"baseline", gap:7 }}>
                       <span style={{ fontFamily:"'Playfair Display',serif", fontSize:46, fontWeight:900, color:f.accent, lineHeight:1 }}>{f.stat}</span>
                       <span className="dm" style={{ fontSize:13, color:f.accent, fontWeight:500, opacity:.68, marginBottom:2 }}>{f.statLabel}</span>

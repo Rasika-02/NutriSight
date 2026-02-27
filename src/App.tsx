@@ -15,11 +15,13 @@ import HealthPage from "./pages/HealthPage";
 import DashboardPage from "./pages/DashboardPage";
 import AboutPage from "./pages/AboutPage";
 import AuthPage from "./pages/AuthPage";
+import ProfilePage from "./pages/ProfilePage";
+import NutritionHomePage from "./pages/NutritionHomePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Pages that should not show the global Navbar/Footer
+// Pages that hide the global Navbar/Footer
 const NO_LAYOUT_PATHS = ["/", "/login", "/signup"];
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -60,7 +62,23 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route path="*"             element={<NotFound />}       />
+              <Route
+                path="/home/:userId"
+                element={
+                  <ProtectedRoute>
+                    <NutritionHomePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/:userId"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
         </AuthProvider>
