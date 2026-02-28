@@ -273,6 +273,29 @@ export default function Index() {
         }
 
         .stickyImgWrap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+
+  border: 3px solid rgba(139,58,31,0.35);
+
+  box-shadow:
+    0 14px 36px rgba(0,0,0,.15),
+    0 4px 10px rgba(0,0,0,.10);
+
+  z-index: 10;
+  margin-top: -4px;
+  background: var(--img-bg, linear-gradient(145deg,#FFD4B0,#FFB085));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
           position: absolute;
           top: 0;
           left: 50%;
@@ -515,60 +538,12 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ═══════ MEALS GRID ═══════ */}
-      <section id="meals" style={{ background:"linear-gradient(180deg,#FFF5EE 0%,#FFEADB 100%)",padding:"0 48px 110px" }}>
-        <div style={{ maxWidth:1200,margin:"0 auto" }}>
-          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:50,flexWrap:"wrap",gap:24 }}>
-            <div>
-              <span className="dm" style={{ fontSize:12,fontWeight:700,letterSpacing:2.5,textTransform:"uppercase",color:"#E8734A",display:"block",marginBottom:12 }}>Today's Menu</span>
-              <h2 style={{ fontFamily:"'Playfair Display',serif",fontSize:"clamp(30px,4vw,46px)",fontWeight:900,color:"#3D1F0A",letterSpacing:"-1px" }}>
-                Made fresh,<br/><span style={{ fontStyle:"italic" }}>every day</span>
-              </h2>
-            </div>
-            <Link to="/meal-plans" className="btnOutline">View All Plans →</Link>
-          </div>
-          <div className="mealGrid" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:22 }}>
-            {healthyMeals.map(meal=>(
-              <div key={meal.name} className="mealCard">
-                <div style={{ position:"relative",height:196,overflow:"hidden" }}>
-                  <img src={meal.image} alt={meal.name} className="mealImg" style={{ width:"100%",height:"100%",objectFit:"cover" }}/>
-                  <div style={{ position:"absolute",top:12,left:12,background:"#E8734A",color:"#fff",padding:"4px 11px",borderRadius:20,fontSize:10,fontFamily:"'DM Sans',sans-serif",fontWeight:700,letterSpacing:.5,textTransform:"uppercase" }}>{meal.tag}</div>
-                </div>
-                <div style={{ padding:"18px 20px 22px" }}>
-                  <h3 style={{ fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#3D1F0A",marginBottom:8 }}>{meal.name}</h3>
-                  <div style={{ display:"flex",gap:12,marginBottom:16 }}>
-                    <span className="dm" style={{ fontSize:12,color:"#A07060",fontWeight:500 }}>🔥 {meal.cal}</span>
-                    <span className="dm" style={{ fontSize:12,color:"#A07060",fontWeight:500 }}>💪 {meal.protein} protein</span>
-                  </div>
-                  <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-                    <span style={{ fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,color:"#E8734A" }}>{meal.price}</span>
-                    <button className="addBtn" onClick={()=>navigate("/meal-plans")} aria-label={`Add ${meal.name}`}>+</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ═══════ CTA ═══════ */}
-      <section style={{ padding:"0 48px 110px" }}>
-        <div style={{ maxWidth:1200,margin:"0 auto",borderRadius:36,background:"linear-gradient(135deg,#E8734A 0%,#C4522E 50%,#8B2E0F 100%)",padding:"70px 62px",position:"relative",overflow:"hidden" }}>
-          <div style={{ position:"absolute",width:300,height:300,top:-70,right:-70,background:"rgba(255,200,150,.18)",opacity:.2,borderRadius:"60% 40% 55% 45%/50% 60% 40% 50%",animation:"blob 9s ease-in-out infinite",pointerEvents:"none" }}/>
-          <div className="ctaInner" style={{ position:"relative",display:"flex",justifyContent:"space-between",alignItems:"center",gap:36 }}>
-            <div>
-              <h2 style={{ fontFamily:"'Playfair Display',serif",fontSize:"clamp(28px,3.5vw,48px)",fontWeight:900,color:"#fff",letterSpacing:"-1px",marginBottom:14 }}>
-                Stop craving junk.<br/><span style={{ fontStyle:"italic",color:"#FFD4B8" }}>Start eating smart.</span>
-              </h2>
-              <p className="dm" style={{ color:"rgba(255,220,200,.85)",fontSize:16,maxWidth:400 }}>
-                Join 500+ hostel students who swapped the burger for Rajma and never looked back.
-              </p>
-            </div>
-            <Link to="/dashboard" className="btnWhite" style={{ flexShrink:0 }}>Get Your Plan Free →</Link>
-          </div>
-        </div>
-      </section>
+      
 
+    
+
+  
       {/* ═══════ FOOTER ═══════ */}
       <footer style={{ background:"#3D1F0A",padding:"54px 48px 34px" }}>
         <div style={{ maxWidth:1200,margin:"0 auto" }}>

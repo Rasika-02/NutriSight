@@ -14,6 +14,10 @@ const HowItWorks = () => {
   return (
     <section
       ref={ref}
+<<<<<<< HEAD
+      
+=======
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
       className="section-animate relative min-h-screen flex items-center justify-center px-6 py-24"
     >
       <div className="bg-glow-green top-1/3 right-0" />

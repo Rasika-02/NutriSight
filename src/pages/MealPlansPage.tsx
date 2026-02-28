@@ -1,379 +1,784 @@
 import { useSectionAnimation } from "@/hooks/useSectionAnimation";
-import { useState } from "react";
-import { Plus, Check } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ThumbsUp, ThumbsDown, RefreshCw } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { mlApi, WeeklyPlan, MealEntry, MealPreference } from "@/lib/api";
+
+/* ── Sticker assets ── */
+import sticker1 from "@/assets/salad.png";
+import sticker2 from "@/assets/chilla.png";
+import sticker3 from "@/assets/idli.png";
+import sticker4 from "@/assets/raita.png";
+import sticker5 from "@/assets/dosa.png";
+import sticker6 from "@/assets/oats.png";
+
 
 const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-const weeklyPlan: Record<string, { breakfast:string; lunch:string; dinner:string; kcal:number; protein:number; cost:number }> = {
-  Mon: { breakfast:"Poha + Chai",        lunch:"Rajma Chawal",       dinner:"Dal Tadka + Roti",     kcal:1820, protein:58, cost:65 },
-  Tue: { breakfast:"Idli Sambar",         lunch:"Chole Bhature",      dinner:"Paneer Bhurji + Roti", kcal:1950, protein:72, cost:80 },
-  Wed: { breakfast:"Moong Dal Chilla",   lunch:"Egg Curry + Rice",   dinner:"Khichdi",              kcal:1760, protein:68, cost:70 },
-  Thu: { breakfast:"Upma",               lunch:"Soya Pulao",         dinner:"Palak Dal + Roti",     kcal:1800, protein:64, cost:68 },
-  Fri: { breakfast:"Besan Cheela",       lunch:"Rajma Chawal",       dinner:"Egg Bhurji + Roti",    kcal:1870, protein:70, cost:72 },
-  Sat: { breakfast:"Poha + Boiled Eggs", lunch:"Chole Rice",         dinner:"Paneer Sabzi + Roti",  kcal:1920, protein:74, cost:85 },
-  Sun: { breakfast:"Oats with Nuts",     lunch:"Dal Makhani + Rice", dinner:"Mixed Veg Curry",      kcal:1780, protein:60, cost:75 },
-};
-
-const meals = [
-  { name:"Rajma Chawal",     cal:"320 kcal", protein:"18g", price:"₹40",  emoji:"🫘", color:"#FF6B35" },
-  { name:"Paneer Bhurji",    cal:"380 kcal", protein:"22g", price:"₹60",  emoji:"🧀", color:"#F59E0B" },
-  { name:"Egg Curry",        cal:"290 kcal", protein:"20g", price:"₹45",  emoji:"🥚", color:"#22C55E" },
-  { name:"Dal Rice",         cal:"350 kcal", protein:"15g", price:"₹30",  emoji:"🍛", color:"#3B82F6" },
-  { name:"Soya Pulao",       cal:"310 kcal", protein:"24g", price:"₹35",  emoji:"🍚", color:"#8B5CF6" },
-  { name:"Moong Dal Chilla", cal:"220 kcal", protein:"14g", price:"₹25",  emoji:"🥞", color:"#06B6D4" },
-  { name:"Chole Roti",       cal:"340 kcal", protein:"16g", price:"₹35",  emoji:"🥘", color:"#EC4899" },
-  { name:"Idli Sambar",      cal:"280 kcal", protein:"12g", price:"₹25",  emoji:"🥣", color:"#10B981" },
-];
-
-const swaps = [
-  { junk:"Burger 🍔",      alt:"Rajma Chawal 🫘",    saved:170, price:"₹100" },
-  { junk:"Lays Chips 🫙",  alt:"Roasted Makhana 🌾", saved:416, price:"₹20"  },
-  { junk:"Cold Drink 🥤",  alt:"Nimbu Pani 🍋",      saved:180, price:"₹10"  },
-  { junk:"Samosa 🥟",      alt:"Paneer Bhurji 🧀",   saved:120, price:"₹30"  },
-  { junk:"Ice Cream 🍦",   alt:"Dahi + Honey 🥣",    saved:260, price:"₹25"  },
-  { junk:"Chocolate Cake 🎂", alt:"Fruit Bowl 🍓",   saved:390, price:"₹80"  },
-];
-
-const nutrition = [
-  { label:"Calories", cur:1820, max:2000, unit:"kcal", color:"#FF5C1A" },
-  { label:"Protein",  cur:58,   max:75,   unit:"g",    color:"#22C55E" },
-  { label:"Carbs",    cur:240,  max:300,  unit:"g",    color:"#F59E0B" },
-  { label:"Water",    cur:1.8,  max:3,    unit:"L",    color:"#06B6D4" },
-];
-
-const slotLabels = ["🌅 Breakfast","☀️ Lunch","🌙 Dinner"];
-
 export default function MealPlansPage() {
   const ref = useSectionAnimation(true);
-  const [day,    setDay]    = useState("Mon");
-  const [added,  setAdded]  = useState<string[]>([]);
-  const [expand, setExpand] = useState<number|null>(null);
 
-  const plan   = weeklyPlan[day];
-  const toggle = (n:string) => setAdded(p => p.includes(n) ? p.filter(x=>x!==n) : [...p,n]);
+  const [planner, setPlanner] = useState({
+    Mon: { breakfast:"Kande Pohe", lunch:"Rajma Chawal", snack:"Chana Chaat", dinner:"Dal Tadka + Roti" },
+    Tue: { breakfast:"Idli Sambar", lunch:"Chole Rice", snack:"Roasted Makhana", dinner:"Paneer Bhurji + Roti" },
+    Wed: { breakfast:"Moong Chilla", lunch:"Egg Curry + Rice", snack:"Fruit Bowl", dinner:"Khichdi" },
+    Thu: { breakfast:"Upma", lunch:"Soya Pulao", snack:"Peanuts", dinner:"Palak Dal + Roti" },
+    Fri: { breakfast:"Besan Cheela", lunch:"Rajma Chawal", snack:"Sprouts", dinner:"Egg Bhurji + Roti" },
+    Sat: { breakfast:"Poha + Eggs", lunch:"Chole Rice", snack:"Buttermilk", dinner:"Paneer Sabzi + Roti" },
+    Sun: { breakfast:"Idli Sambar", lunch:"Dal Rice", snack:"Chana Sundal", dinner:"Veg Curry + Roti" },
+  });
+
+  const updateMeal = (day:string, type:string, value:string) => {
+    setPlanner(prev => ({
+      ...prev,
+      [day]: { ...prev[day], [type]: value }
+    }));
+  };
 
   return (
     <section
       ref={ref}
-      className="section-fade min-h-screen py-14 px-4"
+      className="min-h-screen py-20 px-6"
       style={{
-        background:"linear-gradient(160deg,#FFF0E8 0%,#FFE4D0 40%,#FFF8F3 70%,#FFEADB 100%)",
+        background:"linear-gradient(160deg,#FFF0E8 0%,#FFE4D0 50%,#FFF8F3 100%)",
         fontFamily:"'DM Sans',sans-serif",
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,800;0,900;1,800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-        /* ── card shell ── */
-        .card {
-          background:rgba(255,255,255,0.75);
-          backdrop-filter:blur(18px);
-          border:1px solid rgba(255,140,80,0.15);
-          border-radius:24px;
-          padding:22px 20px;
+        .page-wrap {
+          max-width: 1100px;
+          margin: 0 auto;
         }
 
-        /* ── section heading ── */
-        .sec-title {
-          font-family:'Fraunces',serif;
-          font-size:1.05rem;
-          font-weight:800;
-          color:#2D1206;
-          margin:0 0 16px;
+        .planner-board {
+  position: relative;
+  padding: 60px 40px 80px;
+  border-radius: 50px;
+
+  background:
+    radial-gradient(
+      circle at 20% 15%,
+      rgba(255, 255, 255, 0.35),
+      rgba(255, 255, 255, 0.15) 20%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      rgba(0, 0, 0, 0.15),
+      transparent 40%
+    ),
+    linear-gradient(
+      145deg,
+      #f7b7a3 0%,
+      #e77a54 35%,
+      #ce5c37 65%,
+      #a84427 100%
+    );
+
+  box-shadow:
+    0 40px 90px rgba(206, 92, 55, 0.35),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+        .planner-title {
+          font-family: 'Great Vibes', cursive;
+          font-size: clamp(3rem, 6vw, 4rem);
+          color: #fff;
+          text-align: center;
+          margin-bottom: 50px;
         }
 
-        /* ── day pill ── */
-        .dpill {
-          border:1.5px solid rgba(255,120,60,0.22);
-          border-radius:12px;
-          padding:7px 14px;
-          background:transparent;
-          font-family:'DM Sans',sans-serif;
-          font-size:13px;
-          font-weight:600;
-          color:#8A4828;
-          cursor:pointer;
-          transition:all .2s;
-          white-space:nowrap;
-          flex-shrink:0;
-        }
-        .dpill:hover { background:rgba(255,255,255,.8); }
-        .dpill.on {
-          background:linear-gradient(135deg,#FF8C5A,#FF5C1A);
-          color:#fff;
-          border-color:transparent;
-          box-shadow:0 4px 14px rgba(255,92,26,.32);
+        .planner-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 28px;
         }
 
-        /* ── meal slot ── */
-        .mslot {
-          background:rgba(255,255,255,.5);
-          border:1px dashed rgba(255,120,60,.28);
-          border-radius:14px;
-          padding:12px 14px;
-          flex:1;
-        }
-        .mslot-label { font-size:0.65rem; font-weight:700; color:#B06040; letter-spacing:.6px; text-transform:uppercase; margin-bottom:4px; }
-        .mslot-text  { font-size:0.86rem; font-weight:600; color:#2D1206; }
-
-        /* ── stat chip ── */
-        .schip {
-          flex:1;
-          border-radius:14px;
-          padding:10px 8px;
-          text-align:center;
-        }
-        .schip-val { font-family:'Fraunces',serif; font-size:1.05rem; font-weight:900; line-height:1; }
-        .schip-lbl { font-size:0.62rem; font-weight:600; color:#8A4828; margin-top:3px; }
-
-        /* ── meal card ── */
-        .mcard {
-          display:flex;
-          align-items:center;
-          gap:13px;
-          background:rgba(255,255,255,.65);
-          border:1px solid rgba(255,140,80,.14);
-          border-radius:18px;
-          padding:13px 14px;
-          transition:all .28s cubic-bezier(.34,1.56,.64,1);
-        }
-        .mcard:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(220,90,40,.13); background:rgba(255,255,255,.92); }
-        .mcard.on   { border-color:rgba(34,197,94,.35); background:rgba(242,255,247,.85); }
-
-        .add-btn {
-          width:30px; height:30px; border-radius:50%; border:none;
-          color:#fff; cursor:pointer;
-          display:flex; align-items:center; justify-content:center;
-          transition:all .25s cubic-bezier(.34,1.56,.64,1);
-          flex-shrink:0;
-        }
-        .add-btn:hover { transform:scale(1.22) rotate(90deg); }
-
-        /* ── swap row ── */
-        .srow {
-          display:flex; align-items:center; justify-content:space-between;
-          padding:11px 14px;
-          background:rgba(255,255,255,.62);
-          border:1px solid rgba(255,140,80,.14);
-          border-radius:15px;
-          cursor:pointer;
-          transition:all .22s ease;
-        }
-        .srow:hover { background:rgba(255,255,255,.92); border-color:rgba(255,92,26,.28); }
-        .srow.open  { background:rgba(255,255,255,.92); border-color:rgba(255,92,26,.3); }
-
-        /* ── nut bar ── */
-        .nbar-track { height:7px; border-radius:99px; background:rgba(230,150,100,.15); overflow:hidden; margin-top:5px; }
-        .nbar-fill  { height:100%; border-radius:99px; transition:width 1s ease; }
-
-        /* ── page tag ── */
-        .ptag {
-          display:inline-block;
-          background:rgba(255,92,26,.1);
-          border:1.5px solid rgba(255,92,26,.22);
-          color:#CC4A10;
-          font-size:10px; font-weight:800;
-          letter-spacing:2px; text-transform:uppercase;
-          padding:5px 16px; border-radius:30px;
-          margin-bottom:14px;
+        @media(max-width: 950px){
+          .planner-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
-        @keyframes fadeUp {
-          from { opacity:0; transform:translateY(12px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-        .fu { animation:fadeUp .35s cubic-bezier(.34,1.56,.64,1) both; }
-
-        /* ── grid: 1-col mobile, 2-col md+, 4-col xl for meals ── */
-        .meals-grid {
-          display:grid;
-          grid-template-columns:1fr;
-          gap:10px;
-        }
-        @media(min-width:640px) {
-          .meals-grid { grid-template-columns:1fr 1fr; }
+        .planner-card {
+          background: #F6F1EC;
+          border-radius: 30px;
+          padding: 24px 20px;
+          border: 3px solid rgba(255,255,255,.4);
+          min-height: 270px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          transition: .3s ease;
         }
 
-        .page-wrap { max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+        .planner-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 45px rgba(0,0,0,.15);
+        }
+
+        .planner-day {
+          font-size: 1.4rem;
+          font-weight: 700;
+          text-align: center;
+          color: #3A1E0E;
+        }
+
+        .planner-slot {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .slot-label {
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #A04E2A;
+        }
+
+        .planner-input {
+          background: transparent;
+          border: none;
+          border-bottom: 2px dashed #CBBFB3;
+          font-size: 0.9rem;
+          padding: 5px 4px;
+          outline: none;
+        }
+
+        .planner-input:focus {
+          border-bottom: 2px solid #FF5C1A;
+        }
+
+        .planner-card.sun { grid-column: span 3; }
+
+        @media(max-width:950px){
+          .planner-card.sun { grid-column: span 2; }
+        }
+
+        /* 🔥 STICKER STYLING */
+
+        .sticker {
+          position: absolute;
+          pointer-events: none;
+          opacity: .95;
+          filter: drop-shadow(0 8px 20px rgba(0,0,0,.25));
+          animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+          0%,100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(3deg); }
+        }
+
+        /* Different sizes + depth */
+        .s1 { width:120px; top:-40px; right:80px; z-index:5; }
+        .s2 { width:95px; bottom:-35px; left:60px; z-index:3; }
+        .s3 { width:110px; top:45%; right:-40px; z-index:4; }
+        .s4 { width:85px; bottom:40px; right:120px; z-index:2; }
+        .s5 { width:100px; top:140px; left:-35px; z-index:3; }
+        .s6 { width:130px; bottom:-45px; right:-30px; z-index:6; }
+
       `}</style>
 
       <div className="page-wrap">
+        <div className="planner-board">
 
-        {/* ── Header ── */}
+          <h2 className="planner-title">Weekly Meal Planner</h2>
+
+          <div className="planner-grid">
+            {days.map(day => (
+              <div key={day} className={`planner-card ${day==="Sun" ? "sun" : ""}`}>
+                <div className="planner-day">{day}</div>
+
+                {["breakfast","lunch","snack","dinner"].map(type => (
+                  <div key={type} className="planner-slot">
+                    <span className="slot-label">{type}</span>
+                    <input
+                      value={planner[day][type]}
+                      onChange={(e)=>updateMeal(day,type,e.target.value)}
+                      className="planner-input"
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* ✅ LOCAL STICKERS */}
+          <img className="sticker s1" src={sticker1} alt="" />
+          <img className="sticker s2" src={sticker2} alt="" />
+          <img className="sticker s3" src={sticker3} alt="" />
+          <img className="sticker s4" src={sticker4} alt="" />
+          <img className="sticker s5" src={sticker5} alt="" />
+          <img className="sticker s6" src={sticker6} alt="" />
+
+        </div>
+
+// ── Types ────────────────────────────────────────────────────────────────────
+type Goal     = "weight_loss" | "maintenance" | "muscle_gain";
+type Diet     = "veg" | "non-veg";
+type Reaction = "liked" | "disliked" | null;
+type MealSlot = "breakfast" | "lunch" | "snack" | "dinner";
+
+const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] as const;
+
+const GOAL_LABELS: Record<Goal, string> = {
+  weight_loss: "🔥 Weight Loss",
+  maintenance: "⚖️ Maintenance",
+  muscle_gain: "💪 Muscle Gain",
+};
+
+const MEAL_EMOJIS: Record<string, string> = {
+  breakfast:"🌅", lunch:"☀️", snack:"🍎", dinner:"🌙",
+};
+
+/** Deduplicate all meals across 7 days (unique dish_name) */
+function collectAllMeals(plan: WeeklyPlan): MealEntry[] {
+  const seen = new Set<string>();
+  const out: MealEntry[] = [];
+  for (const day of plan.days) {
+    for (const m of Object.values(day.meals)) {
+      if (m && !seen.has(m.dish_name)) { seen.add(m.dish_name); out.push(m); }
+    }
+  }
+  return out;
+}
+
+
+export default function MealPlansPage() {
+  const ref = useSectionAnimation(true);
+  const { user, token, isAuthenticated } = useAuth();
+
+  // ── ML settings ──────────────────────────────────────────────────
+  const [goal, setGoal]         = useState<Goal>("maintenance");
+  const [diet, setDiet]         = useState<Diet>("veg");
+  const [activity, setActivity] = useState("moderate");
+
+  // ── Plan data ─────────────────────────────────────────────────────
+  const [plan, setPlan]         = useState<WeeklyPlan | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+
+  // ── Reactions ─────────────────────────────────────────────────────
+  const [reactions, setReactions]         = useState<Record<string, Reaction>>({});
+  const [reactionLoading, setRxnLoading]  = useState<Set<string>>(new Set());
+
+  // ── Fetch plan ────────────────────────────────────────────────────
+  const fetchPlan = useCallback(async () => {
+    if (!token) return;
+    setLoading(true); setError(null);
+    try {
+      setPlan(await mlApi.getWeeklyPlan(token, goal, activity, diet));
+    } catch {
+      setError("ML server unreachable — check that it's running on :8000");
+    } finally {
+      setLoading(false);
+    }
+  }, [token, goal, diet, activity]);
+
+  // ── Fetch reactions ───────────────────────────────────────────────
+  const fetchReactions = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [ld, dd] = await Promise.all([
+        mlApi.getPreferences(user._id),
+        mlApi.getDislikes(user._id),
+      ]);
+      const map: Record<string, Reaction> = {};
+      for (const p of (ld.preferences as MealPreference[])) map[p.dish_name] = "liked";
+      for (const d of (dd.dislikes   as MealPreference[])) map[d.dish_name] = "disliked";
+      setReactions(map);
+    } catch { /* silent */ }
+  }, [user]);
+
+  useEffect(() => {
+    if (isAuthenticated) { fetchPlan(); fetchReactions(); }
+  }, [isAuthenticated, fetchPlan, fetchReactions]);
+
+  // ── Reaction toggle ───────────────────────────────────────────────
+  const toggleReaction = async (meal: MealEntry, action: "liked" | "disliked") => {
+    if (!token || !user) return;
+    const key     = meal.dish_name;
+    const current = reactions[key] ?? null;
+    if (reactionLoading.has(key)) return;
+
+    const next: Reaction = current === action ? null : action;
+    setReactions(prev => ({ ...prev, [key]: next }));
+    setRxnLoading(prev => new Set(prev).add(key));
+
+    const payload = {
+      user_id: user._id, dish_name: meal.dish_name,
+      calories_kcal: meal.calories_kcal, protein_g: meal.protein_g,
+      carbs_g: meal.carbs_g, fats_g: meal.fats_g,
+      category: meal.category, veg_nonveg: meal.veg_nonveg,
+    };
+
+    try {
+      if      (next === "liked")    await mlApi.likeMeal(token, payload);
+      else if (next === "disliked") await mlApi.dislikeMeal(token, payload);
+      else if (current === "liked") await mlApi.unlikeMeal(token, user._id, key);
+      else                          await mlApi.undislikeMeal(token, user._id, key);
+    } catch {
+      setReactions(prev => ({ ...prev, [key]: current }));
+    } finally {
+      setRxnLoading(prev => { const s = new Set(prev); s.delete(key); return s; });
+    }
+  };
+
+  // ── Derived ───────────────────────────────────────────────────────
+  const allMeals   = plan ? collectAllMeals(plan) : [];
+  const targets    = plan?.daily_targets;
+  const likedMeals = allMeals.filter(m => reactions[m.dish_name] === "liked");
+  const likeCnt    = Object.values(reactions).filter(r => r === "liked").length;
+  const dislikeCnt = Object.values(reactions).filter(r => r === "disliked").length;
+
+  // ═══════════════════════════════════════════════════════════════════
+  return (
+    <section
+      ref={ref}
+      className="section-fade min-h-screen py-12 px-4"
+      style={{ background:"linear-gradient(160deg,#FFF0E8 0%,#FFE4D0 40%,#FFF8F3 70%,#FFEADB 100%)", fontFamily:"'DM Sans',sans-serif" }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Fraunces:ital,wght@0,800;0,900;1,800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+
+        /* ── Layout ── */
+        .pw { max-width:1120px; margin:0 auto; display:flex; flex-direction:column; gap:22px; }
+
+        /* ── Shared card ── */
+        .card { background:rgba(255,255,255,.78); backdrop-filter:blur(18px); border:1px solid rgba(255,140,80,.15); border-radius:24px; padding:22px 20px; }
+
+        /* ── Section title ── */
+        .stitle { font-family:'Fraunces',serif; font-size:1.05rem; font-weight:900; color:#2D1206; margin:0 0 14px; }
+
+        /* ── Pill button ── */
+        .pill { border:1.5px solid rgba(255,120,60,.22); border-radius:11px; padding:6px 14px; background:transparent; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; color:#8A4828; cursor:pointer; transition:all .2s; white-space:nowrap; flex-shrink:0; }
+        .pill:hover { background:rgba(255,255,255,.8); }
+        .pill.on { background:linear-gradient(135deg,#FF8C5A,#FF5C1A); color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(255,92,26,.32); }
+
+        /* ── Generate button ── */
+        .gen-btn { display:flex; align-items:center; gap:6px; padding:8px 20px; background:linear-gradient(135deg,#FF8C5A,#FF5C1A); border:none; border-radius:12px; color:#fff; font-family:'DM Sans',sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; box-shadow:0 4px 14px rgba(255,92,26,.3); transition:all .2s; white-space:nowrap; }
+        .gen-btn:disabled { opacity:.5; cursor:default; }
+        .gen-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 7px 20px rgba(255,92,26,.38); }
+        @keyframes spin { to{ transform:rotate(360deg); } }
+        .spinning { animation:spin .75s linear infinite; }
+
+        /* ── ptag ── */
+        .ptag { display:inline-block; background:rgba(255,92,26,.1); border:1.5px solid rgba(255,92,26,.22); color:#CC4A10; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; padding:4px 14px; border-radius:30px; margin-bottom:10px; }
+
+        /* ═══════════════════════════════
+           PLANNER BOARD
+        ═══════════════════════════════ */
+        .board {
+          position:relative;
+          padding:52px 36px 72px;
+          border-radius:44px;
+          background:
+            radial-gradient(circle at 20% 15%, rgba(255,255,255,.35), rgba(255,255,255,.12) 20%, transparent 40%),
+            radial-gradient(circle at 85% 80%, rgba(0,0,0,.15), transparent 40%),
+            linear-gradient(145deg,#f7b7a3 0%,#e77a54 35%,#ce5c37 65%,#a84427 100%);
+          box-shadow:0 40px 90px rgba(206,92,55,.32), inset 0 1px 0 rgba(255,255,255,.25);
+          overflow:visible;
+        }
+
+        .board-title { font-family:'Great Vibes',cursive; font-size:clamp(2.4rem,5vw,3.8rem); color:#fff; text-align:center; margin-bottom:42px; text-shadow:0 2px 14px rgba(0,0,0,.16); }
+
+        /* ── Day grid ── */
+        .dgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+        @media(max-width:860px){ .dgrid{ grid-template-columns:repeat(2,1fr); } }
+        @media(max-width:520px){ .dgrid{ grid-template-columns:1fr; } }
+        .dcard { background:#F6F1EC; border-radius:26px; padding:20px 16px 18px; border:3px solid rgba(255,255,255,.4); display:flex; flex-direction:column; gap:10px; transition:.28s ease; }
+        .dcard:hover { transform:translateY(-6px); box-shadow:0 20px 44px rgba(0,0,0,.17); }
+        .dcard.sun { grid-column:span 3; }
+        @media(max-width:860px){ .dcard.sun{ grid-column:span 2; } }
+        @media(max-width:520px){ .dcard.sun{ grid-column:span 1; } }
+
+        .day-label { font-size:1.25rem; font-weight:800; text-align:center; color:#3A1E0E; }
+        .day-cost  { font-size:0.67rem; font-weight:700; color:rgba(58,30,14,.42); text-align:center; margin-top:-6px; }
+
+        /* ── Meal slot inside day card ── */
+        .mslot2 { background:rgba(255,255,255,.68); border-radius:14px; padding:10px 12px; border:1px solid rgba(200,160,130,.18); }
+        .ms-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+        .ms-label  { font-size:0.6rem; font-weight:800; color:#A04E2A; text-transform:uppercase; letter-spacing:.6px; }
+        .ms-price  { font-size:0.65rem; font-weight:800; color:#FF6B3D; }
+        .ms-dish   { font-size:0.85rem; font-weight:700; color:#2D1206; }
+        .ms-dish.empty { color:rgba(45,18,6,.3); font-weight:400; font-style:italic; }
+        .ms-meta   { font-size:0.68rem; color:#8A4828; margin-top:3px; }
+
+        /* compact like/dislike */
+        .rxn-mini { display:flex; gap:4px; margin-top:5px; }
+        .rxm { width:24px; height:24px; border-radius:50%; border:1.5px solid transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; flex-shrink:0; }
+        .rxm:disabled { opacity:.35; cursor:default; }
+        .rxm:hover:not(:disabled) { transform:scale(1.22); }
+        .rxm.lk  { background:rgba(34,197,94,.08); border-color:rgba(34,197,94,.2); }
+        .rxm.lk.on  { background:rgba(34,197,94,.2); border-color:rgba(34,197,94,.45); }
+        .rxm.dk  { background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.2); }
+        .rxm.dk.on  { background:rgba(239,68,68,.2); border-color:rgba(239,68,68,.45); }
+
+        /* ── Nutrition bar inside board ── */
+        .nutri-bar { background:rgba(255,255,255,.2); border-radius:18px; padding:16px 20px; margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+        .nchip { background:rgba(255,255,255,.22); border-radius:13px; padding:10px 14px; text-align:center; min-width:76px; }
+        .nchip-v { font-family:'Fraunces',serif; font-size:1.05rem; font-weight:900; color:#fff; line-height:1; }
+        .nchip-l { font-size:0.58rem; font-weight:700; color:rgba(255,255,255,.72); margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+
+        /* ── Stickers ── */
+        .stkr { position:absolute; pointer-events:none; opacity:.95; filter:drop-shadow(0 7px 16px rgba(0,0,0,.22)); }
+        @keyframes float { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-9px) rotate(3deg)} }
+        .s1{animation:float 6s   ease-in-out infinite     ;width:114px;top:-36px ;right:76px ;z-index:5}
+        .s2{animation:float 7s   ease-in-out infinite 1s  ;width:90px ;bottom:-30px;left:52px;z-index:3}
+        .s3{animation:float 5.5s ease-in-out infinite .5s ;width:106px;top:44%  ;right:-36px;z-index:4}
+        .s4{animation:float 8s   ease-in-out infinite 2s  ;width:80px ;bottom:36px;right:116px;z-index:2}
+        .s5{animation:float 6.5s ease-in-out infinite 1.5s;width:96px ;top:132px;left:-30px;z-index:3}
+        .s6{animation:float 7.5s ease-in-out infinite .8s ;width:122px;bottom:-42px;right:-26px;z-index:6}
+
+        /* ═══════════════════════════════
+           RECOMMENDATIONS LIST
+        ═══════════════════════════════ */
+        .rcard { display:flex; align-items:center; gap:14px; background:rgba(255,255,255,.7); border:1.5px solid rgba(255,140,80,.14); border-radius:18px; padding:14px 16px; transition:all .28s cubic-bezier(.34,1.56,.64,1); }
+        .rcard:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(220,90,40,.1); background:rgba(255,255,255,.95); }
+        .rcard.liked    { border-color:rgba(34,197,94,.35);  background:rgba(242,255,247,.85); }
+        .rcard.disliked { border-color:rgba(239,68,68,.25);  background:rgba(255,245,245,.8); }
+
+        .rico { width:46px; height:46px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; }
+
+        .rxn-wrap { display:flex; gap:6px; flex-shrink:0; }
+        .rxn { width:34px; height:34px; border-radius:50%; border:1.5px solid transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; flex-shrink:0; }
+        .rxn:hover { transform:scale(1.18); }
+        .rxn:disabled { opacity:.4; cursor:default; transform:none; }
+        .rxn.lbtn  { background:rgba(34,197,94,.08); border-color:rgba(34,197,94,.22); }
+        .rxn.lbtn.on { background:rgba(34,197,94,.18); border-color:rgba(34,197,94,.45); }
+        .rxn.dbtn  { background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.22); }
+        .rxn.dbtn.on { background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.45); }
+
+        .vbadge { font-size:0.58rem; font-weight:800; padding:2px 7px; border-radius:8px; text-transform:uppercase; letter-spacing:.5px; }
+
+        /* ── skeleton ── */
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        .skel { animation:shimmer 1.6s ease-in-out infinite; background:linear-gradient(90deg,rgba(255,140,80,.08) 25%,rgba(255,140,80,.2) 50%,rgba(255,140,80,.08) 75%); background-size:200% 100%; border-radius:13px; }
+
+        /* ── fade-up ── */
+        @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .fu{animation:fadeUp .35s cubic-bezier(.34,1.56,.64,1) both}
+
+        /* ── tip box ── */
+        .tip-box { font-size:0.72rem; color:#8A4828; background:rgba(255,92,26,.06); border:1px solid rgba(255,92,26,.14); border-radius:10px; padding:8px 12px; margin-bottom:14px; line-height:1.55; }
+
+        /* ── favourites row ── */
+        .fav-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(255,255,255,.62); border:1px solid rgba(34,197,94,.2); border-radius:14px; }
+        .fav-name { font-weight:700; color:#2D1206; font-size:0.86rem; }
+        .fav-meta { font-size:0.7rem; color:#8A4828; margin-top:2px; }
+
+        select.ctrl-s { appearance:none; background:rgba(255,255,255,.8); border:1.5px solid rgba(255,120,60,.22); border-radius:11px; padding:6px 28px 6px 12px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; color:#8A4828; cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A4828'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+        select.ctrl-s:focus { outline:none; border-color:rgba(255,92,26,.5); }
+      `}</style>
+
+      <div className="pw">
+
+        {/* ── PAGE HEADER ── */}
         <div>
-          <div className="ptag">Weekly Meal Intelligence</div>
-          <h1 style={{ fontFamily:"'Fraunces',serif", fontSize:"clamp(2rem,6vw,3rem)", fontWeight:900, color:"#2D1206", lineHeight:1.08, letterSpacing:"-1.5px", marginBottom:8 }}>
-            Indian Hostel{" "}
+          <div className="ptag">🤖 AI Meal Intelligence</div>
+          <h1 style={{ fontFamily:"'Fraunces',serif", fontSize:"clamp(2rem,5.5vw,3rem)", fontWeight:900, color:"#2D1206", lineHeight:1.08, letterSpacing:"-1.5px", marginBottom:6 }}>
+            Your{" "}
             <span style={{ fontStyle:"italic", background:"linear-gradient(135deg,#FF8C5A,#FF3D00)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
-              Meal Plans
+              AI Meal Plans
             </span>
           </h1>
-          <p style={{ color:"#8A4828", fontSize:"0.95rem", lineHeight:1.65, margin:0 }}>
-            Budget-friendly, protein-rich Indian meals — planned for your whole week.
+          <p style={{ color:"#8A4828", fontSize:"0.9rem", lineHeight:1.65, maxWidth:600 }}>
+            RL-powered 7-day recommendations · rate meals to make the model smarter · prices from the nutrition dataset
           </p>
         </div>
 
-        {/* ── 1. Weekly Day Planner ── */}
-        <div className="card">
-          <p className="sec-title">📅 Weekly Planner</p>
-
-          {/* Day pills */}
-          <div style={{ display:"flex", gap:7, overflowX:"auto", paddingBottom:6, marginBottom:16 }}>
-            {days.map(d => (
-              <button key={d} className={`dpill${day===d?" on":""}`} onClick={()=>setDay(d)}>{d}</button>
-            ))}
+        {/* ── NOT SIGNED IN ── */}
+        {!isAuthenticated && (
+          <div className="card" style={{ textAlign:"center", padding:"40px 24px" }}>
+            <div style={{ fontSize:"2.5rem", marginBottom:12 }}>🔐</div>
+            <div style={{ fontFamily:"'Fraunces',serif", fontWeight:800, fontSize:"1.1rem", color:"#2D1206", marginBottom:8 }}>Sign in to get your plan</div>
+            <div style={{ color:"#8A4828", fontSize:"0.85rem" }}>Log in to generate a personalised 7-day plan from your profile data.</div>
           </div>
+        )}
 
-          {/* Meal slots */}
-          <div key={day} className="fu" style={{ display:"flex", flexDirection:"column", gap:9, marginBottom:14 }}>
-            {[
-              { label:"Breakfast", meal:plan.breakfast, icon:"🌅" },
-              { label:"Lunch",     meal:plan.lunch,     icon:"☀️" },
-              { label:"Dinner",    meal:plan.dinner,    icon:"🌙" },
-            ].map(s => (
-              <div key={s.label} className="mslot">
-                <div className="mslot-label">{s.icon} {s.label}</div>
-                <div className="mslot-text">{s.meal}</div>
-              </div>
-            ))}
-          </div>
+        {isAuthenticated && (
+          <>
+            {/* ── CONTROLS ── */}
+            <div className="card">
+              <div style={{ display:"flex", flexWrap:"wrap", gap:12, alignItems:"flex-end" }}>
 
-          {/* Stats row */}
-          <div key={`s-${day}`} className="fu" style={{ display:"flex", gap:8 }}>
-            <div className="schip" style={{ background:"rgba(255,92,26,.08)" }}>
-              <div className="schip-val" style={{ color:"#FF5C1A" }}>{plan.kcal}</div>
-              <div className="schip-lbl">kcal</div>
-            </div>
-            <div className="schip" style={{ background:"rgba(34,197,94,.08)" }}>
-              <div className="schip-val" style={{ color:"#16A34A" }}>{plan.protein}g</div>
-              <div className="schip-lbl">protein</div>
-            </div>
-            <div className="schip" style={{ background:"rgba(59,130,246,.08)" }}>
-              <div className="schip-val" style={{ color:"#2563EB" }}>₹{plan.cost}</div>
-              <div className="schip-lbl">budget</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── 2. Nutrition Targets ── */}
-        <div className="card">
-          <p className="sec-title">🔥 Daily Nutrition</p>
-          <div style={{ display:"flex", flexDirection:"column", gap:13 }}>
-            {nutrition.map(n => {
-              const pct = Math.round(n.cur / n.max * 100);
-              return (
-                <div key={n.label}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <span style={{ fontSize:"0.82rem", fontWeight:600, color:"#2D1206" }}>{n.label}</span>
-                    <span style={{ fontSize:"0.75rem", color:"#8A4828" }}>
-                      <span style={{ fontWeight:700, color:n.color }}>{n.cur}{n.unit}</span>
-                      <span style={{ opacity:.6 }}> / {n.max}{n.unit}</span>
-                      <span style={{ marginLeft:6, background:`${n.color}18`, color:n.color, fontWeight:800, fontSize:"0.68rem", padding:"1px 7px", borderRadius:8 }}>{pct}%</span>
-                    </span>
-                  </div>
-                  <div className="nbar-track">
-                    <div className="nbar-fill" style={{ width:`${pct}%`, background:`linear-gradient(90deg,${n.color}80,${n.color})` }}/>
+                {/* Goal */}
+                <div>
+                  <div style={{ fontSize:"0.58rem", fontWeight:800, color:"#B06040", letterSpacing:".6px", textTransform:"uppercase", marginBottom:5 }}>Goal</div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    {(["weight_loss","maintenance","muscle_gain"] as Goal[]).map(g => (
+                      <button key={g} className={`pill${goal===g?" on":""}`} onClick={() => setGoal(g)}>
+                        {GOAL_LABELS[g]}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* ── 3. Meal Cards Grid ── */}
-        <div>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <p className="sec-title" style={{ margin:0 }}>🍽️ Meal Catalogue</p>
-            {added.length > 0 && (
-              <span style={{ fontSize:"0.72rem", background:"rgba(255,92,26,.1)", color:"#CC4A10", fontWeight:700, padding:"3px 10px", borderRadius:20 }}>
-                {added.length} added
-              </span>
+                {/* Diet */}
+                <div>
+                  <div style={{ fontSize:"0.58rem", fontWeight:800, color:"#B06040", letterSpacing:".6px", textTransform:"uppercase", marginBottom:5 }}>Diet</div>
+                  <div style={{ display:"flex", gap:6 }}>
+                    {(["veg","non-veg"] as Diet[]).map(d => (
+                      <button key={d} className={`pill${diet===d?" on":""}`} onClick={() => setDiet(d)}>
+                        {d==="veg"?"🌿 Veg":"🍗 Non-Veg"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Activity */}
+                <div>
+                  <div style={{ fontSize:"0.58rem", fontWeight:800, color:"#B06040", letterSpacing:".6px", textTransform:"uppercase", marginBottom:5 }}>Activity</div>
+                  <select className="ctrl-s" value={activity} onChange={e => setActivity(e.target.value)}>
+                    {[["sedentary","Sedentary"],["light","Light"],["moderate","Moderate"],["very_active","Very Active"],["extra_active","Extra Active"]].map(([v,l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button className="gen-btn" disabled={loading} onClick={fetchPlan} style={{ marginLeft:"auto" }}>
+                  <RefreshCw size={13} className={loading ? "spinning" : ""} />
+                  {loading ? "Generating…" : "✨ Generate AI Plan"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── ERROR ── */}
+            {error && (
+              <div style={{ background:"rgba(239,68,68,.08)", border:"1.5px solid rgba(239,68,68,.25)", borderRadius:14, padding:"10px 16px", fontSize:13, color:"#DC2626", fontWeight:600 }}>
+                ⚠️ {error}
+              </div>
             )}
-          </div>
 
-          <div className="meals-grid">
-            {meals.map(m => {
-              const isOn = added.includes(m.name);
-              return (
-                <div key={m.name} className={`mcard${isOn?" on":""}`}>
-                  {/* Emoji */}
-                  <div style={{ width:46, height:46, borderRadius:13, background:`${m.color}14`, border:`1.5px solid ${m.color}28`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.4rem", flexShrink:0 }}>
-                    {m.emoji}
-                  </div>
+            {/* ── PLANNER BOARD ── */}
+            <div className="board">
+              <div className="board-title">Weekly Meal Planner</div>
 
-                  {/* Info */}
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, color:"#2D1206", fontSize:"0.87rem", marginBottom:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{m.name}</div>
-                    <div style={{ display:"flex", gap:8 }}>
-                      <span style={{ fontSize:"0.7rem", color:"#8A4828" }}>🔥 {m.cal}</span>
-                      <span style={{ fontSize:"0.7rem", color:"#8A4828" }}>💪 {m.protein}</span>
+              {/* loading skeletons on the board */}
+              {loading ? (
+                <div className="dgrid">
+                  {DAY_LABELS.map(d => (
+                    <div key={d} className={`dcard${d==="Sun"?" sun":""}`}>
+                      <div className="day-label">{d}</div>
+                      {[1,2,3,4].map(i => <div key={i} className="skel" style={{ height:54 }} />)}
                     </div>
-                  </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="dgrid">
+                  {DAY_LABELS.map((dayLabel, dayIdx) => {
+                    const dayData   = plan?.days[dayIdx];
+                    const dayMeals  = dayData?.meals ?? {};
+                    const dayCost   = (["breakfast","lunch","snack","dinner"] as MealSlot[])
+                      .reduce((s, t) => s + (dayMeals[t]?.price_inr ?? 0), 0);
 
-                  {/* Price + Add */}
-                  <div style={{ display:"flex", alignItems:"center", gap:9, flexShrink:0 }}>
-                    <span style={{ fontFamily:"'Fraunces',serif", fontWeight:900, color:"#FF5C1A", fontSize:"1.05rem" }}>{m.price}</span>
-                    <button
-                      className="add-btn"
-                      style={{
-                        background: isOn
-                          ? "linear-gradient(135deg,#22C55E,#16A34A)"
-                          : "linear-gradient(135deg,#FF8C5A,#FF5C1A)",
-                        boxShadow: `0 4px 12px ${isOn?"rgba(34,197,94,.32)":"rgba(255,92,26,.3)"}`,
-                      }}
-                      onClick={()=>toggle(m.name)}
-                    >
-                      {isOn ? <Check size={13}/> : <Plus size={13}/>}
-                    </button>
+                    return (
+                      <div key={dayLabel} className={`dcard fu${dayLabel==="Sun"?" sun":""}`} style={{ animationDelay:`${dayIdx*0.06}s` }}>
+                        <div className="day-label">{dayLabel}</div>
+                        {dayCost > 0 && <div className="day-cost">~₹{Math.round(dayCost)} / day</div>}
+
+                        {(["breakfast","lunch","snack","dinner"] as MealSlot[]).map(slot => {
+                          const m    = dayMeals[slot] ?? null;
+                          const rx   = m ? (reactions[m.dish_name] ?? null) : null;
+                          const busy = m ? reactionLoading.has(m.dish_name) : false;
+
+                          return (
+                            <div key={slot} className="mslot2">
+                              <div className="ms-header">
+                                <span className="ms-label">{MEAL_EMOJIS[slot]} {slot}</span>
+                                {m?.price_inr && m.price_inr > 0 && (
+                                  <span className="ms-price">₹{Math.round(m.price_inr)}</span>
+                                )}
+                              </div>
+
+                              {m ? (
+                                <>
+                                  <div className="ms-dish">{m.dish_name}</div>
+                                  <div className="ms-meta">🔥{Math.round(m.calories_kcal)} kcal · 💪{m.protein_g.toFixed(1)}g</div>
+
+                                  {/* compact rating */}
+                                  <div className="rxn-mini">
+                                    <button className={`rxm lk${rx==="liked"?" on":""}`} disabled={busy}
+                                      onClick={() => toggleReaction(m!, "liked")} title="Like">
+                                      <ThumbsUp size={10} fill={rx==="liked"?"#16A34A":"none"} color={rx==="liked"?"#16A34A":"#8A4828"}/>
+                                    </button>
+                                    <button className={`rxm dk${rx==="disliked"?" on":""}`} disabled={busy}
+                                      onClick={() => toggleReaction(m!, "disliked")} title="Dislike">
+                                      <ThumbsDown size={10} fill={rx==="disliked"?"#DC2626":"none"} color={rx==="disliked"?"#DC2626":"#8A4828"}/>
+                                    </button>
+                                    {rx && (
+                                      <span style={{ fontSize:"0.6rem", fontWeight:700, alignSelf:"center", marginLeft:2, color:rx==="liked"?"#16A34A":"#DC2626" }}>
+                                        {rx==="liked"?"Liked 👍":"Disliked 👎"}
+                                      </span>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="ms-dish empty">Not generated yet</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Nutrition summary inside board */}
+              {targets && !loading && (
+                <div className="nutri-bar">
+                  {[
+                    { v:Math.round(targets.calories),          l:"kcal" },
+                    { v:`${Math.round(targets.protein_g)}g`,   l:"protein" },
+                    { v:`${Math.round(targets.carbs_g)}g`,     l:"carbs" },
+                    { v:`${Math.round(targets.fats_g)}g`,      l:"fats" },
+                    { v:`${Math.round(targets.fiber_g??0)}g`,  l:"fibre" },
+                    { v:`${Math.round(targets.water_ml/100)/10}L`, l:"water" },
+                  ].map(n => (
+                    <div key={n.l} className="nchip">
+                      <div className="nchip-v">{n.v}</div>
+                      <div className="nchip-l">{n.l}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Floating food stickers */}
+              <img className="stkr s1" src={sticker1} alt="" />
+              <img className="stkr s2" src={sticker2} alt="" />
+              <img className="stkr s3" src={sticker3} alt="" />
+              <img className="stkr s4" src={sticker4} alt="" />
+              <img className="stkr s5" src={sticker5} alt="" />
+              <img className="stkr s6" src={sticker6} alt="" />
+            </div>
+
+            {/* ── AI RECOMMENDATION LIST ── */}
+            {allMeals.length > 0 && !loading && (
+              <div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <div className="stitle" style={{ margin:0 }}>🍽️ All AI Recommendations</div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {likeCnt > 0    && <span style={{ fontSize:"0.7rem", background:"rgba(34,197,94,.1)",  color:"#16A34A", fontWeight:700, padding:"3px 10px", borderRadius:20 }}>👍 {likeCnt}</span>}
+                    {dislikeCnt > 0 && <span style={{ fontSize:"0.7rem", background:"rgba(239,68,68,.1)", color:"#DC2626", fontWeight:700, padding:"3px 10px", borderRadius:20 }}>👎 {dislikeCnt}</span>}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* ── 4. Craving Swaps ── */}
-        <div className="card">
-          <p className="sec-title">⚡ Craving → Swap</p>
-          <p style={{ fontSize:"0.82rem", color:"#8A4828", marginBottom:14, marginTop:-8 }}>
-            Same price, fewer calories. Tap any to see details.
-          </p>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {swaps.map((s,i) => (
-              <div key={s.junk}>
-                <div
-                  className={`srow${expand===i?" open":""}`}
-                  onClick={()=>setExpand(expand===i?null:i)}
-                >
-                  <div>
-                    <div style={{ fontSize:"0.78rem", color:"#8A4828", textDecoration:"line-through", opacity:.65, marginBottom:2 }}>{s.junk}</div>
-                    <div style={{ fontSize:"0.88rem", fontWeight:700, color:"#2D1206" }}>{s.alt}</div>
-                  </div>
-                  <div style={{ textAlign:"right", flexShrink:0 }}>
-                    <div style={{ fontWeight:800, fontSize:"0.8rem", color:"#16A34A" }}>−{s.saved} kcal</div>
-                    <div style={{ fontSize:"0.68rem", color:"#8A4828", marginTop:2 }}>same {s.price}</div>
-                  </div>
+                <div className="tip-box">
+                  💡 <strong>Rate meals to train the AI</strong> — <span style={{ color:"#16A34A" }}>👍 Like</span> dishes you enjoy; <span style={{ color:"#DC2626" }}>👎 Dislike</span> ones you don't. The LinUCB bandit avoids disliked meals in future plans.
                 </div>
 
-                {/* Expanded detail */}
-                {expand === i && (
-                  <div className="fu" style={{ display:"flex", gap:7, padding:"10px 14px 4px", flexWrap:"wrap" }}>
-                    <span style={{ fontSize:"0.72rem", fontWeight:700, padding:"4px 10px", borderRadius:10, background:"rgba(34,197,94,.1)", color:"#16A34A" }}>
-                      ✅ Healthier choice
-                    </span>
-                    <span style={{ fontSize:"0.72rem", fontWeight:700, padding:"4px 10px", borderRadius:10, background:"rgba(255,92,26,.1)", color:"#CC4A10" }}>
-                      💰 Same {s.price}
-                    </span>
-                    <span style={{ fontSize:"0.72rem", fontWeight:700, padding:"4px 10px", borderRadius:10, background:"rgba(59,130,246,.1)", color:"#2563EB" }}>
-                      🔥 {s.saved} kcal saved
-                    </span>
-                  </div>
-                )}
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {allMeals.map((m, idx) => {
+                    const rx   = reactions[m.dish_name] ?? null;
+                    const busy = reactionLoading.has(m.dish_name);
+                    const isVeg = m.veg_nonveg?.toLowerCase() === "veg";
+                    let cls = "rcard fu";
+                    if (rx === "liked")    cls += " liked";
+                    if (rx === "disliked") cls += " disliked";
+
+                    return (
+                      <div key={m.dish_name} className={cls} style={{ animationDelay:`${idx*0.03}s` }}>
+
+                        <div className="rico" style={{
+                          background: isVeg ? "rgba(34,197,94,.08)" : "rgba(239,68,68,.07)",
+                          border: `1.5px solid ${isVeg?"rgba(34,197,94,.2)":"rgba(239,68,68,.15)"}`,
+                        }}>
+                          {MEAL_EMOJIS[m.category] ?? "🍽️"}
+                        </div>
+
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontWeight:700, color:"#2D1206", fontSize:"0.9rem", marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            {m.dish_name}
+                          </div>
+                          <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                            <span style={{ fontSize:"0.7rem", color:"#8A4828" }}>🔥 {Math.round(m.calories_kcal)} kcal</span>
+                            <span style={{ fontSize:"0.7rem", color:"#8A4828" }}>💪 {m.protein_g.toFixed(1)}g</span>
+                            <span style={{ fontSize:"0.7rem", color:"#8A4828" }}>🌾 {m.carbs_g.toFixed(1)}g</span>
+                            {m.price_inr && m.price_inr > 0 && (
+                              <span style={{ fontSize:"0.7rem", fontWeight:800, color:"#FF6B3D" }}>₹{Math.round(m.price_inr)}</span>
+                            )}
+                            <span className="vbadge" style={{ background:isVeg?"rgba(34,197,94,.12)":"rgba(239,68,68,.1)", color:isVeg?"#16A34A":"#DC2626" }}>
+                              {isVeg?"Veg":"Non-Veg"}
+                            </span>
+                          </div>
+                          <div style={{ fontSize:"0.65rem", color:"#B06040", marginTop:2, textTransform:"capitalize" }}>{m.category}</div>
+                        </div>
+
+                        <div className="rxn-wrap">
+                          <button className={`rxn lbtn${rx==="liked"?" on":""}`} disabled={busy} title="Like" onClick={() => toggleReaction(m,"liked")}>
+                            <ThumbsUp size={14} fill={rx==="liked"?"#16A34A":"none"} color={rx==="liked"?"#16A34A":"#8A4828"}/>
+                          </button>
+                          <button className={`rxn dbtn${rx==="disliked"?" on":""}`} disabled={busy} title="Dislike — won't appear again" onClick={() => toggleReaction(m,"disliked")}>
+                            <ThumbsDown size={14} fill={rx==="disliked"?"#DC2626":"none"} color={rx==="disliked"?"#DC2626":"#8A4828"}/>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
+            {/* ── LOADING SKELETON (recommendation list) ── */}
+            {loading && (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {[1,2,3,4,5].map(i => <div key={i} className="skel" style={{ height:72 }}/>)}
+              </div>
+            )}
+
+            {/* ── DAILY TARGETS ── */}
+            {targets && !loading && (
+              <div className="card">
+                <div className="stitle">🔥 Daily Nutrition Targets</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:10 }}>
+                  {[
+                    { label:"Calories", val:`${Math.round(targets.calories)} kcal`, color:"#FF5C1A" },
+                    { label:"Protein",  val:`${Math.round(targets.protein_g)} g`,   color:"#22C55E" },
+                    { label:"Carbs",    val:`${Math.round(targets.carbs_g)} g`,     color:"#F59E0B" },
+                    { label:"Fats",     val:`${Math.round(targets.fats_g)} g`,      color:"#8B5CF6" },
+                    { label:"Fibre",    val:`${Math.round(targets.fiber_g??0)} g`,  color:"#10B981" },
+                    { label:"Water",    val:`${Math.round(targets.water_ml/100)/10} L`, color:"#06B6D4" },
+                  ].map(n => (
+                    <div key={n.label} style={{ background:`${n.color}0d`, borderRadius:14, padding:"12px 14px", textAlign:"center" }}>
+                      <div style={{ fontFamily:"'Fraunces',serif", fontWeight:900, fontSize:"1.2rem", color:n.color }}>{n.val}</div>
+                      <div style={{ fontSize:"0.68rem", fontWeight:700, color:"rgba(92,61,46,.55)", marginTop:3, textTransform:"uppercase", letterSpacing:".5px" }}>{n.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── FAVOURITES ── */}
+            {likedMeals.length > 0 && !loading && (
+              <div className="card">
+                <div className="stitle">⭐ Your Favourites</div>
+                <p style={{ fontSize:"0.78rem", color:"#8A4828", marginTop:-10, marginBottom:14 }}>
+                  Meals you liked — stored in MongoDB, loaded on every visit
+                </p>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {likedMeals.map(m => (
+                    <div key={m.dish_name} className="fav-row">
+                      <div>
+                        <div className="fav-name">{m.dish_name}</div>
+                        <div className="fav-meta">
+                          {Math.round(m.calories_kcal)} kcal · {m.protein_g.toFixed(1)}g protein
+                          {m.price_inr ? ` · ₹${Math.round(m.price_inr)}` : ""}
+                        </div>
+                      </div>
+                      <ThumbsUp size={14} fill="#16A34A" color="#16A34A"/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </>
+        )}
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
       </div>
     </section>
   );

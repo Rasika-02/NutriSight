@@ -13,6 +13,10 @@ import HealthPage from "./pages/HealthPage";
 import DashboardPage from "./pages/DashboardPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
+<<<<<<< HEAD
+import ScrollToTop from "./components/ScrollToTop";
+=======
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
 
 const queryClient = new QueryClient();
 
@@ -23,6 +27,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Navbar />
+<<<<<<< HEAD
+          <ScrollToTop />
+          <main className="min-h-screen">
+=======
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -33,6 +42,10 @@ const App = () => (
           <Route path="/about" element={<AboutPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+<<<<<<< HEAD
+        </main>
+=======
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
         <Footer />
       </BrowserRouter>
     </TooltipProvider>

@@ -2,6 +2,57 @@
 // ─── ML Backend (FastAPI, port 8000) ───────────────────────────────────────
 const ML_URL = "http://localhost:8000/api";
 
+<<<<<<< HEAD
+=======
+export interface MealEntry {
+  dish_name: string;
+  calories_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fats_g: number;
+  category: string;
+  veg_nonveg: string;
+  price_inr?: number;
+}
+
+export interface DayPlan {
+  day: number;
+  meals: {
+    breakfast: MealEntry | null;
+    lunch: MealEntry | null;
+    dinner: MealEntry | null;
+    snack: MealEntry | null;
+  };
+}
+
+export interface MacroTargets {
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fats_g: number;
+  fiber_g: number;
+  water_ml: number;
+}
+
+export interface WeeklyPlan {
+  user_id: string;
+  daily_targets: MacroTargets;
+  days: DayPlan[];
+}
+
+export interface MealPreference {
+  user_id: string;
+  dish_name: string;
+  calories_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fats_g: number;
+  category: string;
+  veg_nonveg: string;
+  liked_at: string;
+}
+
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
 export interface MealNutrition {
   food_name: string;
   matched_food: string;
@@ -92,6 +143,64 @@ export const mlApi = {
   getScanHistory: (user_id: string, limit = 10) =>
     fetch(`${ML_URL}/scan-history/${user_id}?limit=${limit}`)
       .then(r => r.json() as Promise<{ scans: ScanRecord[]; count: number }>),
+<<<<<<< HEAD
+=======
+
+  // ── Recommendation Engine ─────────────────────────────────────────
+  getWeeklyPlan: (
+    token: string,
+    goal: "weight_loss" | "maintenance" | "muscle_gain" = "maintenance",
+    activityLevel: string = "moderate",
+    dietaryPref: "veg" | "non-veg" = "veg",
+  ) =>
+    fetch(
+      `${ML_URL}/weekly-plan?goal=${goal}&activity_level=${activityLevel}&dietary_pref=${dietaryPref}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    ).then(r => r.json() as Promise<WeeklyPlan>),
+
+  getPreferences: (userId: string) =>
+    fetch(`${ML_URL}/preferences/${userId}`)
+      .then(r => r.json() as Promise<{ preferences: MealPreference[]; count: number }>),
+
+  likeMeal: (token: string, meal: Omit<MealPreference, "liked_at">) =>
+    fetch(`${ML_URL}/preferences/like`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(meal),
+    }).then(r => r.json()),
+
+  unlikeMeal: (token: string, userId: string, dishName: string) =>
+    fetch(`${ML_URL}/preferences/unlike`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ user_id: userId, dish_name: dishName }),
+    }).then(r => r.json()),
+
+  /** Sends -1 feedback to the LinUCB bandit + stores in MongoDB meal_dislikes */
+  dislikeMeal: (token: string, meal: Omit<MealPreference, "liked_at">) =>
+    fetch(`${ML_URL}/preferences/dislike`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(meal),
+    }).then(r => r.json()),
+
+  /** Remove a dislike (undo dislike) */
+  undislikeMeal: (token: string, userId: string, dishName: string) =>
+    fetch(`${ML_URL}/preferences/unlike`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ user_id: userId, dish_name: dishName }),
+    }).then(r => r.json()),
+
+  getDislikes: (userId: string) =>
+    fetch(`${ML_URL}/preferences/dislikes/${userId}`)
+      .then(r => r.json() as Promise<{ dislikes: MealPreference[]; count: number }>),
+
+  /** Returns all dish → price (INR) from sample.csv */
+  getMealPrices: () =>
+    fetch(`${ML_URL}/meal-prices`)
+      .then(r => r.json() as Promise<{ prices: Record<string, number>; count: number; avg_inr: number; min_inr: number; max_inr: number }>),
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
 };
 
 // ─── Main Backend (Express, port 5000) ────────────────────────────────────

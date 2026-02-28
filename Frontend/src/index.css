@@ -6,6 +6,57 @@
 
 @layer base {
   :root {
+<<<<<<< HEAD
+    /* ===== MAIN THEME (DARK PEACH) ===== */
+
+    --background: 30 50% 97%;
+    --foreground: 20 30% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 30% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 30% 18%;
+
+    /* 🍑 DARK PEACH PRIMARY */
+    --primary: 18 79% 56%;               /* #E8734A */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 25 60% 92%;
+    --secondary-foreground: 20 30% 25%;
+
+    --muted: 30 30% 94%;
+    --muted-foreground: 20 15% 45%;
+
+    --accent: 18 79% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 40% 85%;
+    --input: 25 40% 85%;
+    --ring: 18 79% 56%;
+
+    --radius: 1rem;
+
+    /* ===== SIDEBAR ===== */
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 20 30% 18%;
+    --sidebar-primary: 18 79% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 60% 92%;
+    --sidebar-accent-foreground: 20 30% 25%;
+    --sidebar-border: 25 40% 85%;
+    --sidebar-ring: 18 79% 56%;
+
+    /* Optional custom */
+    --peach: 18 79% 56%;
+    --cream: 30 50% 97%;
+  }
+
+=======
     --background: 30 50% 97%;
     --foreground: 350 20% 20%;
 
@@ -52,6 +103,7 @@
 }
 
 @layer base {
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   * {
     @apply border-border;
   }
@@ -62,21 +114,36 @@
 
   body {
     @apply bg-background text-foreground font-body;
+<<<<<<< HEAD
+=======
     body {
   background: #fe95a5;
 }
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   }
 }
 
 @layer utilities {
+<<<<<<< HEAD
+
+  /* ===== CARD EFFECTS ===== */
+
+=======
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   .card-hover {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   .card-hover:hover {
     transform: translateY(-4px) scale(1.02);
+<<<<<<< HEAD
+    box-shadow:
+      0 12px 40px hsl(18 79% 56% / 0.15),
+      0 4px 12px hsl(0 0% 0% / 0.04);
+=======
     box-shadow: 0 12px 40px hsl(346 60% 65% / 0.12),
                 0 4px 12px hsl(0 0% 0% / 0.04);
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   }
 
   .card-glow {
@@ -84,6 +151,18 @@
   }
 
   .card-glow:hover {
+<<<<<<< HEAD
+    box-shadow:
+      0 0 24px hsl(18 79% 56% / 0.25),
+      0 8px 30px hsl(0 0% 0% / 0.06);
+    transform: scale(1.03);
+  }
+
+  /* ===== BUTTON HOVER ===== */
+
+  .btn-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+=======
     box-shadow: 0 0 24px hsl(346 60% 65% / 0.18),
                 0 8px 30px hsl(0 0% 0% / 0.06);
     transform: scale(1.03);
@@ -91,13 +170,22 @@
 
   .btn-hover {
     transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   }
 
   .btn-hover:hover {
     transform: scale(1.05);
+<<<<<<< HEAD
+    box-shadow: 0 6px 24px hsl(18 79% 56% / 0.35);
+  }
+
+  /* ===== NAV LINK UNDERLINE ===== */
+
+=======
     box-shadow: 0 6px 24px hsl(346 60% 65% / 0.3);
   }
 
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   .nav-link {
     position: relative;
   }
@@ -119,6 +207,11 @@
     width: 100%;
   }
 
+<<<<<<< HEAD
+  /* ===== SECTION FADE ===== */
+
+=======
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
   .section-fade {
     opacity: 0;
     transform: translateY(30px);
@@ -130,6 +223,34 @@
     transform: translateY(0);
   }
 
+<<<<<<< HEAD
+  /* ===== FLOAT ANIMATION ===== */
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  /* ===== SCROLL ANIMATION ===== */
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .animate-scroll {
+    width: max-content;
+    animation: scroll 25s linear infinite;
+  }
+
+  .bg-noise {
+    background-blend-mode: overlay;
+  }
+=======
   .scroll-snap-x {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -227,4 +348,5 @@
 
 .bg-noise {
   background-blend-mode: overlay;
+>>>>>>> 31d3dcd17e0eb3d2e8da572039f27821d6501fe8
 }
